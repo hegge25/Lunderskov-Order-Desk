@@ -1,7 +1,7 @@
 import { store } from '../store.js';
 import { computeDesign } from '../engine/design.js';
 import { ChimneyViewer } from '../three/viewer.js';
-import { HEAT_STOPS } from '../three/kit.js';
+import { HEAT_STOPS, heatRange } from '../three/kit.js';
 import { renderStrip } from './strip.js';
 import { mountConfig, updateConfig } from './configPanel.js';
 import { renderDerived, markParts, flashPart } from './derivedPanel.js';
@@ -97,16 +97,18 @@ export function renderOrder(root, id) {
     if (design.params.ladderMissing) missing.push('Ladder');
     if (design.params.platformMissing) missing.push('Platform');
     const leg = $('[data-legend]');
-    const pos = (T) => `${((T - 293) / (880 - 293)) * 100}%`;
+    const [lo, hi] = heatRange(v.Tf, v.Tout);
+    const pos = (T) => `${((T - lo) / (hi - lo)) * 100}%`;
     leg.innerHTML = h`
       ${missing.length ? `<div class="miss-chip"><i></i>${missing.join(' and ')} not specified</div>` : ''}
       ${viewer.toggles.cutaway ? h`
         <div class="heat">
-          <span class="heat-t">Flue gas temperature</span>
-          <div class="heat-bar" style="background:linear-gradient(90deg, ${HEAT_STOPS.map(([t, c]) => `${c} ${pos(t)}`).join(', ')})">
-            <i style="left:${pos(v.Tf)}" title="Inlet"></i><i class="out" style="left:${pos(v.Tout)}" title="Outlet"></i>
+          <span class="heat-t">Flue gas temperature <em>scale fitted to this chimney</em></span>
+          <div class="heat-bar" style="background:linear-gradient(90deg, ${HEAT_STOPS.map(([t, c]) => `${c} ${t * 100}%`).join(', ')})">
+            <i class="out" style="left:${pos(v.Tout)}"><b>outlet ${Math.round(v.Tout)} K</b></i>
+            <i style="left:${pos(v.Tf)}"><b>inlet ${Math.round(v.Tf)} K</b></i>
           </div>
-          <div class="heat-ends"><span>293 K</span><span>${Math.round(v.Tf)} → ${Math.round(v.Tout)} K</span><span>880 K</span></div>
+          <div class="heat-ends"><span>${lo.toFixed(0)} K</span><span>ΔT ${(v.Tf - v.Tout).toFixed(1)} K over ${v.H} m</span><span>${hi.toFixed(0)} K</span></div>
         </div>` : ''}`;
     $('[data-stamp]').innerHTML = h`
       <span><em>H</em>${v.H} m</span><span><em>Ø</em>${v.D.toFixed(2)} m</span><span><em>N</em>${v.N} × ${v.d.toFixed(2)} m</span><span><em>W</em>${(v.weight / 1000).toFixed(1)} t</span>`;

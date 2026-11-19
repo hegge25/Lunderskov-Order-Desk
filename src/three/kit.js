@@ -70,27 +70,35 @@ export function cylinderBetween(a, b, r, mat, segs = 8) {
   return m;
 }
 
-// ── Heat colour map (flue gas temperature in K) ──
+// ── Heat colour map ──
+// Stops are positions 0–1 on a temperature range that is set per design, so the
+// drop from inlet to outlet uses the whole colour scale even when it is only a few kelvin.
 const HEAT = [
-  [293, new THREE.Color('#25305c')],
-  [400, new THREE.Color('#6a2c8a')],
-  [520, new THREE.Color('#c23b5a')],
-  [650, new THREE.Color('#f0702b')],
-  [760, new THREE.Color('#fbb13c')],
-  [880, new THREE.Color('#fff2a8')],
+  [0, new THREE.Color('#25305c')],
+  [0.2, new THREE.Color('#6a2c8a')],
+  [0.4, new THREE.Color('#c23b5a')],
+  [0.62, new THREE.Color('#f0702b')],
+  [0.82, new THREE.Color('#fbb13c')],
+  [1, new THREE.Color('#fff2a8')],
 ];
-export function heatColor(T, out = new THREE.Color()) {
-  if (T <= HEAT[0][0]) return out.copy(HEAT[0][1]);
+export const HEAT_STOPS = HEAT.map(([t, c]) => [t, `#${c.getHexString()}`]);
+
+// Range for a design: the inlet sits at the hot end, the outlet a little above the cold end.
+export function heatRange(Tf, Tout) {
+  const span = Math.max(Tf - Tout, 2);
+  return [Tf - span / 0.8, Tf];
+}
+export function heatColor(T, out = new THREE.Color(), range = [293, 880]) {
+  const t = Math.min(1, Math.max(0, (T - range[0]) / (range[1] - range[0])));
   for (let i = 1; i < HEAT.length; i++) {
-    if (T <= HEAT[i][0]) {
+    if (t <= HEAT[i][0]) {
       const [t0, c0] = HEAT[i - 1];
       const [t1, c1] = HEAT[i];
-      return out.copy(c0).lerp(c1, (T - t0) / (t1 - t0));
+      return out.copy(c0).lerp(c1, (t - t0) / (t1 - t0));
     }
   }
   return out.copy(HEAT[HEAT.length - 1][1]);
 }
-export const HEAT_STOPS = HEAT.map(([t, c]) => [t, `#${c.getHexString()}`]);
 
 // ── Materials ──
 export const LOOKS = {

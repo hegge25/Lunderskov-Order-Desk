@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import {
-  DEG, polar, openCyl, annulusSector, arcTorus, radialFace, cylinderBetween, heatColor,
+  DEG, polar, openCyl, annulusSector, arcTorus, radialFace, cylinderBetween, heatColor, heatRange,
 } from './kit.js';
 
 export const CUT = 110 * DEG; // cutaway wedge
@@ -150,6 +150,7 @@ export function buildChimney(p, ctx) {
   const linerOuter = M.std('liners', 'outer', 'linerStainless');
   const linerInner = M.basic('liners', 'heat', { vertexColors: true, side: THREE.BackSide });
   const col = new THREE.Color();
+  const range = heatRange(p.Tf, p.Tout);
   for (const l of linerLayout(p)) {
     const g = new THREE.Group();
     g.position.set(l.x, 0, l.z);
@@ -161,7 +162,7 @@ export function buildChimney(p, ctx) {
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
-      heatColor(p.Tf - (p.Tf - p.Tout) * (y / Hl), col);
+      heatColor(p.Tf - (p.Tf - p.Tout) * Math.min(1, y / H), col, range);
       colors.set([col.r, col.g, col.b], i * 3);
     }
     inner.setAttribute('color', new THREE.BufferAttribute(colors, 3));

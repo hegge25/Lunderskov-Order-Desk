@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { heatColor, mulberry } from './kit.js';
+import { heatColor, heatRange, mulberry } from './kit.js';
 
 // ── Smoke plume from each liner outlet ──
 const SMOKE_VERT = /* glsl */ `
@@ -222,6 +222,7 @@ export class Flow {
     this.points.userData.noPick = true;
     this.group.add(this.points);
     this.p = p;
+    this.range = heatRange(p.Tf, p.Tout);
   }
   update(dt) {
     if (!this.points) return;
@@ -231,7 +232,7 @@ export class Flow {
       let y = this.pos[i * 3 + 1] + speed * dt * (0.8 + (i % 7) * 0.05);
       if (y > p.H + 0.3) y = 0.2 + this.rnd() * 0.5;
       this.pos[i * 3 + 1] = y;
-      heatColor(p.Tf - (p.Tf - p.Tout) * (y / p.H), this.col);
+      heatColor(p.Tf - (p.Tf - p.Tout) * Math.min(1, y / p.H), this.col, this.range);
       this.colors[i * 3] = this.col.r;
       this.colors[i * 3 + 1] = this.col.g;
       this.colors[i * 3 + 2] = this.col.b;

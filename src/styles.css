@@ -304,11 +304,13 @@ select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-ra
 .miss-chip { display: flex; align-items: center; gap: 8px; background: rgba(217,72,15,0.18); color: #ffc49b; border: 1px solid rgba(255,169,77,0.4); padding: 5px 10px; border-radius: 6px; font-size: 12px; }
 .miss-chip i, .lbl.ghost i { width: 7px; height: 7px; border-radius: 50%; background: #ffa94d; animation: blink 1.2s infinite; display: inline-block; }
 @keyframes blink { 50% { opacity: 0.25; } }
-.heat { background: rgba(17,22,27,0.78); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 7px 10px 6px; width: 250px; color: #c9d1d9; }
+.heat { background: rgba(17,22,27,0.78); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 7px 10px 6px; width: 290px; color: #c9d1d9; }
 .heat-t { font-size: 11px; color: #8d99a5; }
-.heat-bar { position: relative; height: 8px; border-radius: 4px; margin: 5px 0 3px; }
+.heat-t em { font-style: normal; color: #5f6b77; margin-left: 4px; }
+.heat-bar { position: relative; height: 8px; border-radius: 4px; margin: 20px 0 3px; }
 .heat-bar i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #fff; transform: translateX(-1px); }
-.heat-bar i.out { background: #fff; opacity: 0.55; }
+.heat-bar i b { position: absolute; bottom: 13px; font: 500 10.5px var(--mono); color: #fff; white-space: nowrap; transform: translateX(-100%); }
+.heat-bar i.out b { transform: none; color: #b9c2cc; }
 .heat-ends { display: flex; justify-content: space-between; font: 10.5px var(--mono); color: #8d99a5; }
 .heat-ends span:nth-child(2) { color: #fff; }
 
