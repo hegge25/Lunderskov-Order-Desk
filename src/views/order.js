@@ -6,6 +6,7 @@ import { renderStrip } from './strip.js';
 import { mountConfig, updateConfig, focusTarget } from './configPanel.js';
 import { renderDerived, markParts, flashPart } from './derivedPanel.js';
 import { dkk, h, esc } from '../format.js';
+import { explainStrip } from './tour.js';
 
 const GROUP_PART = { flue: 'liners', site: 'shell', inlet: 'inlet', door: 'door', ladder: 'ladder', platform: 'platform' };
 const TOGGLES = [
@@ -121,6 +122,7 @@ export function renderOrder(root, id) {
     renderStrip(stripEl, order, design, variant, {
       onVariant: (v) => { variant = v; renderStripNow(); },
       onAdvance: () => { store.advance(order.id); renderStripNow(); },
+      onHelp: explainStrip,
     });
   }
   function refresh() {

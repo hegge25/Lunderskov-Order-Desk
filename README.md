@@ -14,6 +14,8 @@ npm run build    # static site in dist/
 
 ## What it does
 
+- **Guided tour**: runs on the first visit (9 steps) and can be replayed with **Tour** in the top bar. The **?** on the progress strip explains each of its numbers.
+
 - **Orders board**: KPIs and every order with its type (CTO/ETO), stage, delivery date and status.
 - **Order page**:
   - **Progress strip**: stage dates, a to-scale bar of every process step, today marker, and a TO-BE / AS-IS toggle.

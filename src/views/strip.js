@@ -30,9 +30,10 @@ export function renderStrip(el, order, design, variant, handlers) {
           <b>${fmtDate(s.delivery)}</b>
         </div>
         <div class="sum-sub">
-          <span>${fmtDays(s.total)} from enquiry</span>
-          <span class="delta ${variant === 'AS-IS' ? 'bad' : 'good'}">${variant === 'AS-IS' ? `+${fmtDays(saved)} vs TO-BE` : `−${fmtDays(saved)} vs AS-IS`}</span>
+          <span>${Math.round(s.total)} working days from enquiry</span>
+          <span class="delta ${variant === 'AS-IS' ? 'bad' : 'good'}">${variant === 'AS-IS' ? `${Math.round(saved)} d later than TO-BE` : `${Math.round(saved)} d sooner than AS-IS`}</span>
         </div>
+        <button class="help" data-help title="How to read this strip">?</button>
       </div>
       <ol class="stages">
         ${s.stages.map((st) => h`
@@ -61,4 +62,5 @@ export function renderStrip(el, order, design, variant, handlers) {
 
   el.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => handlers.onVariant(b.dataset.v)));
   el.querySelector('[data-advance]')?.addEventListener('click', handlers.onAdvance);
+  el.querySelector('[data-help]').addEventListener('click', handlers.onHelp);
 }

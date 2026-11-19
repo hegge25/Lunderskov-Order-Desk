@@ -1,6 +1,7 @@
 import './styles.css';
 import { renderOrders } from './views/orders.js';
 import { renderOrder } from './views/order.js';
+import { maybeStartTour, startTour } from './views/tour.js';
 
 const app = document.getElementById('app');
 let cleanup = () => {};
@@ -15,3 +16,5 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 route();
+document.querySelector('[data-tour]').addEventListener('click', () => startTour());
+maybeStartTour();
