@@ -38,6 +38,7 @@ export function buildChimney(p, ctx) {
   const cutGroups = [];
   const anim = { fans: [], lights: [], blink: [], billboards: [] };
   const labels = [];
+  const callouts = [];
   const H = p.H;
   const Ro = p.Ro;
   const rShellIn = Ro - p.tShell;
@@ -65,6 +66,13 @@ export function buildChimney(p, ctx) {
     parent.add(o);
     labels.push(o);
     return o;
+  };
+  // Anchor for a screen-space callout (see callouts.js).
+  const callout = (parent, id, part, html, pos, opt = {}) => {
+    const o = new THREE.Object3D();
+    o.position.copy(pos);
+    parent.add(o);
+    callouts.push({ id, part, html, obj: o, kind: opt.kind || 'dim', maxDist: opt.maxDist, cls: opt.cls, slide: opt.slide });
   };
   const lineMat = M.line('dim', { color: 0xdfe6ee, transparent: true, opacity: 0.75 });
   const lines = (parent, pts, kind = 'dim') => {
@@ -122,8 +130,8 @@ export function buildChimney(p, ctx) {
       add(casing, radialFace(rInsIn, rShellIn, t, 0, H), insMat, 'insulation');
     }
     add(casing, annulusSector(rInsIn, rShellIn, th0, th0 + thL, 96).translate(0, H + 0.002, 0), insMat, 'insulation');
-    label(casing, `${p.insType} <b>${Math.round(p.tIns * 1000)} mm</b>`, polar(rInsIn + p.tIns / 2, th0, H * 0.55), { kind: 'cut', cls: 'cut', cx: 1.08 });
-    label(casing, `Shell <b>${Math.round(p.tShell * 1000)} mm</b>`, polar(Ro, th0 + thL, H * 0.48), { kind: 'cut', cls: 'cut', cx: -0.08 });
+    callout(casing, 'cut-ins', 'insulation', `${p.insType} <b>${Math.round(p.tIns * 1000)} mm</b>`, polar(rInsIn + p.tIns / 2, th0, H * 0.55), { kind: 'cut', cls: 'cut', slide: [1, H - 0.5] });
+    callout(casing, 'cut-shell', 'shell', `Shell plates <b>${Math.round(p.tShell * 1000)} mm</b>`, polar(Ro - p.tShell / 2, th0 + thL, H * 0.45), { kind: 'cut', cls: 'cut', slide: [1, H - 0.5] });
   } else if (p.N > 1) {
     // roof over the space between the liners
     const s = new THREE.Shape();
@@ -160,7 +168,10 @@ export function buildChimney(p, ctx) {
     add(g, inner, linerInner, 'liners', { cast: false });
     add(g, new THREE.TorusGeometry(p.rLiner + p.tLiner, 0.035, 6, 48).rotateX(Math.PI / 2).translate(0, Hl, 0), M.std('liners', 'rim', 'darkSteel'), 'liners');
   }
-  label(root, `${Math.round(p.N)} × Ø <b>${(p.rLiner * 2).toFixed(2)} m</b> liner`, new THREE.Vector3(0, H * 0.82, 0), { kind: 'cut', cls: 'cut' });
+  {
+    const l0 = linerLayout(p)[0];
+    callout(root, 'liners', 'liners', `${Math.round(p.N)} × liner Ø <b>${(p.rLiner * 2).toFixed(2)} m</b>`, new THREE.Vector3(l0.x, H * 0.72, l0.z), { kind: 'cut', cls: 'cut', slide: [1, H] });
+  }
 
   // ── Flue gas inlet, fans, filters, plant (all along +x, at 90°) ──
   const plant = plantLayout(p);
@@ -205,7 +216,7 @@ export function buildChimney(p, ctx) {
       anim.fans.push({ obj: rotor, speed: (p.fanRpm / 60) * Math.PI * 2 * 0.12 });
       // support legs
       add(fan, new THREE.BoxGeometry(s * 1.1, p.inletH - s * 0.65, 0.8).translate(0, -(p.inletH + s * 0.65) / 2, 0), M.std('fans', 'stand', 'darkSteel'), 'fans');
-      label(fan, `${p.fanCount} × fan · ${p.fanRpm} rpm`, new THREE.Vector3(0, s * 0.9, 0), { maxDist: 70, cy: 1 });
+      callout(fan, 'fans', 'fans', `${p.fanCount} × fan · <b>${p.fanRpm} rpm</b>`, new THREE.Vector3(0, s * 0.65, 0), { maxDist: 120 });
       z += 2;
     }
     if (plant.shown) {
@@ -229,7 +240,7 @@ export function buildChimney(p, ctx) {
         add(bank, new THREE.BoxGeometry(fw + 0.02, 0.08, fw + 0.02).translate(cx, 1.2 + fh - 0.25, cz), M.std('filters', 'band', 'yellow'), 'filters');
       }
       const lastZ = z + 1 + plant.shown * (fw + 0.5);
-      label(bank, `${p.filterCount} × filter <b>${p.filterType}</b>`, new THREE.Vector3(2.4 + fw / 2, 1.4 + fh, (z + lastZ) / 2), { maxDist: 90, cy: 1 });
+      callout(bank, 'filters', 'filters', `${p.filterCount} × filter <b>type ${p.filterType}</b>`, new THREE.Vector3(2.4 + fw / 2, 1.2 + fh, z + 1 + fw / 2), { maxDist: 160 });
     }
     // inlet dimension: ground to inlet centre
     const dz = Ro + 1.0;
@@ -237,7 +248,7 @@ export function buildChimney(p, ctx) {
       new THREE.Vector3(r + 0.35, 0, dz), new THREE.Vector3(r + 0.35, p.inletH, dz),
       new THREE.Vector3(r + 0.2, p.inletH, dz), new THREE.Vector3(r + 0.5, p.inletH, dz),
     ]);
-    label(side, `Inlet ${p.inletShape === 'Square' ? 'w' : 'Ø'} <b>${Math.round(r * 2000)}</b> · h <b>${p.inletH.toFixed(1)} m</b>`, new THREE.Vector3(r + 0.4, p.inletH + r + 0.35, dz), { maxDist: 60, cy: 1 });
+    callout(side, 'inlet', 'inlet', `Inlet ${p.inletShape === 'Square' ? 'w' : 'Ø'} <b>${Math.round(r * 2000)}</b> · h <b>${p.inletH.toFixed(1)} m</b>`, new THREE.Vector3(0, p.inletH + r, Ro + 0.8), { maxDist: 120 });
 
     // customer's process plant, as context
     const pm = M.basic('plant', 'ghost', { color: 0x9fb4c8, transparent: true, opacity: 0.07, depthWrite: false });
@@ -248,7 +259,7 @@ export function buildChimney(p, ctx) {
     edges.userData.kind = 'context';
     edges.userData.noPick = true;
     side.add(edges);
-    label(side, 'Process plant <span>by others</span>', new THREE.Vector3(0, plant.height + 1, plant.z0 + 8), { kind: 'context', cls: 'muted' });
+    callout(side, 'plant', 'plant', 'Process plant <span>by others</span>', new THREE.Vector3(0, plant.height, plant.z0), { kind: 'context', cls: 'muted' });
 
     // lateral steel tubes to the plant
     for (const y of p.tubeLevels) {
@@ -269,7 +280,7 @@ export function buildChimney(p, ctx) {
     add(g, new THREE.TorusGeometry(r + 0.03, 0.028, 6, 40).translate(0, p.doorH, z + 0.02), M.std('door', 'frame', 'galv'), 'door');
     for (const dy of [-0.5, 0.5]) add(g, new THREE.CylinderGeometry(0.035, 0.035, 0.14, 10).translate(-r - 0.06, p.doorH + dy * r, z + 0.03), M.std('door', 'frame', 'galv'), 'door');
     add(g, new THREE.BoxGeometry(0.08, Math.max(0.14, r * 0.5), 0.04).translate(r * 0.62, p.doorH, z + 0.05), M.std('door', 'lock', 'yellow'), 'door');
-    label(g, `Door Ø <b>${Math.round(r * 2000)}</b> · R <b>${p.doorH.toFixed(1)} m</b>`, new THREE.Vector3(0, p.doorH - r - 0.25, z + 0.2), { maxDist: 45, cy: 0 });
+    callout(g, 'door', 'door', `Cleaning door Ø <b>${Math.round(r * 2000)}</b> · R <b>${p.doorH.toFixed(1)} m</b>`, new THREE.Vector3(0, p.doorH, z + 0.05), { maxDist: 120 });
   }
 
   // ── Safety ladder ──
@@ -317,13 +328,13 @@ export function buildChimney(p, ctx) {
     if (p.harness) {
       add(g, new THREE.CylinderGeometry(0.01, 0.01, len, 5).translate(0, y0 + len / 2, ladderZ + 0.03), M.std('ladder', 'line', 'yellow'), 'ladder');
     }
-    label(g, `Ladder · <b>${nR}</b> steps`, new THREE.Vector3(0, Math.min(H * 0.33, H - 4), ladderZ + 0.5), { maxDist: 160, cx: 0 });
+    callout(g, 'ladder', 'ladder', `Ladder · <b>${nR}</b> steps${p.cageTo - p.cageFrom > 0.5 ? ' · back support' : p.harness ? ' · safety line' : ''}`, new THREE.Vector3(0, Math.min(H * 0.3, H - 4), ladderZ), { maxDist: 400, slide: [1, H] });
   } else if (p.ladderMissing) {
     const g = new THREE.Group();
     root.add(g);
     const gm = M.basic('ghost', 'ladder', { color: 0xffa94d, transparent: true, opacity: 0.22, depthWrite: false });
     add(g, new THREE.BoxGeometry(0.55, H, 0.08).translate(0, H / 2 + 0.3, ladderZ), gm, 'ghost', { cast: false, receive: false });
-    label(g, '<i></i>Ladder not specified', new THREE.Vector3(0, H * 0.4, ladderZ + 0.4), { kind: 'ghost', cls: 'ghost' });
+    callout(g, 'ghost-ladder', 'ghost', '<i></i>Ladder not specified', new THREE.Vector3(0, H * 0.4, ladderZ), { kind: 'ghost', cls: 'ghost', slide: [1, H] });
   }
 
   // ── Platform ──
@@ -368,7 +379,7 @@ export function buildChimney(p, ctx) {
       const a = a0 + ((a1 - a0) * (i + 0.5)) / nS;
       g.add(Object.assign(cylinderBetween(polar(Ro, a, -Math.min(1.2, W)), polar(Ro + W * 0.92, a, -0.05), 0.035, sm), { userData: { part: 'platform' } }));
     }
-    label(g, `${p.platformType} <b>+${p.platformElev.toFixed(1)} m</b> · ${Math.round(p.platformArc)}°`, polar(Rout + 0.4, full ? 0 : a1, 0.8), { maxDist: 260, cx: 0 });
+    callout(g, 'platform', 'platform', `${p.platformType} <b>+${p.platformElev.toFixed(1)} m</b> · ${Math.round(p.platformArc)}°`, polar(Rout, 0, 0.75), { maxDist: 400 });
   } else if (p.platformMissing) {
     const g = new THREE.Group();
     g.position.y = H - 1.5;
@@ -376,7 +387,7 @@ export function buildChimney(p, ctx) {
     const gm = M.basic('ghost', 'platform', { color: 0xffa94d, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
     add(g, annulusSector(Ro, Ro + 1, -Math.PI / 2, Math.PI / 2, 48), gm, 'ghost', { cast: false, receive: false });
     add(g, new THREE.CylinderGeometry(Ro + 1, Ro + 1, 1.5, 48, 1, true, -Math.PI / 2, Math.PI).translate(0, 0.75, 0), gm, 'ghost', { cast: false, receive: false });
-    label(g, '<i></i>Platform not specified', polar(Ro + 1.4, 0, 0.8), { kind: 'ghost', cls: 'ghost', cx: 0 });
+    callout(g, 'ghost-platform', 'ghost', '<i></i>Platform not specified', polar(Ro + 1, 0, 0.75), { kind: 'ghost', cls: 'ghost' });
   }
 
   // ── Guy wires ──
@@ -398,7 +409,13 @@ export function buildChimney(p, ctx) {
       const v = polar(Ra, a, 0.15);
       add(root, new THREE.BoxGeometry(1.4, 0.6, 1.4).translate(v.x, v.y - 0.15, v.z), am, 'supports');
     }
-    label(root, `${p.guyLevels.length * 3} guy wires · Ø <b>${Math.round(p.wireR * 2000)} mm</b>`, polar(Ro + 0.4, GUY_AZ[2], p.guyLevels[0]), { maxDist: 220, cx: 1.05 });
+    for (const [i, a] of GUY_AZ.entries()) {
+      // anchor partway down the first wire, so the dot sits on the cable
+      const y0 = p.guyLevels[0];
+      const t = 0.3;
+      const pt = polar(Ro + (Ra - Ro) * t, a, y0 + (0.3 - y0) * t);
+      if (i === 0) callout(root, 'guys', 'supports', `${p.guyLevels.length * 3} guy wires · Ø <b>${Math.round(p.wireR * 2000)} mm</b> · ${p.guyLevels.join(' / ')} m`, pt, { maxDist: 500 });
+    }
   }
 
   // ── Aviation lights ──
@@ -437,7 +454,7 @@ export function buildChimney(p, ctx) {
       pts.push(v.clone().sub(s), v.clone().add(s));
     }
     if (pts.length) lines(dg, pts);
-    label(dg, `H = <b>${Math.round(H)} m</b>`, polar(rD + 0.3, a, H / 2), { cls: 'major', cx: 1.05 });
+    label(dg, `H = <b>${Math.round(H)} m</b>`, polar(rD, a, H / 2), { cls: 'major vert' });
     const yD = H + 1.1;
     lines(dg, [
       new THREE.Vector3(-Ro, yD, 0), new THREE.Vector3(Ro, yD, 0),
@@ -487,5 +504,5 @@ export function buildChimney(p, ctx) {
     root.add(g);
   }
 
-  return { root, cutGroups, anim, labels, plant };
+  return { root, cutGroups, anim, labels, callouts, plant };
 }

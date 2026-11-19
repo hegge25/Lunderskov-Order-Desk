@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MaterialBank, shellTexture, insulationTexture, DEG } from './kit.js';
 import { buildChimney, linerLayout, plantLayout } from './model.js';
 import { Smoke, WindStreaks, Flow } from './effects.js';
+import { Callouts } from './callouts.js';
 
 const EXTRA_PARTS = {
   plant: { title: 'Customer process plant', lines: ['Built by others. The chimney is sub-supplied to it.'] },
@@ -107,6 +108,13 @@ export class ChimneyViewer {
     this.flow = new Flow();
     scene.add(this.smoke.points, this.wind.mesh, this.flow.group);
 
+    this.callouts = new Callouts(el, {
+      onHover: (part) => {
+        this.calloutHover = part;
+        this.applyHighlight();
+        opts.onHover?.(part);
+      },
+    });
     this.tip = document.createElement('div');
     this.tip.className = 'tip';
     el.appendChild(this.tip);
@@ -196,6 +204,7 @@ export class ChimneyViewer {
     const built = buildChimney(p, { mats: M, cut: this.toggles.cutaway, textures: this.textures });
     this.modelRoot.add(built.root);
     this.built = built;
+    this.callouts.set(built.callouts);
     M.setLook(M.std('shell', 'outer'), p.shellLook);
     M.setLook(M.std('liners', 'outer'), LINER_LOOK[p.linerLook] || 'linerStainless');
 
@@ -267,7 +276,7 @@ export class ChimneyViewer {
     if (!part) this.tip.classList.remove('on');
   }
   applyHighlight() {
-    this.hl = this.hover || this.extHighlight || null;
+    this.hl = this.hover || this.calloutHover || this.extHighlight || null;
   }
 
   view(name, animate = true) {
@@ -400,6 +409,7 @@ export class ChimneyViewer {
 
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
+    if (this.rendered) this.callouts.update(this.camera, this.el.clientWidth, this.el.clientHeight, this.toggles, this.rendered, this.hl);
   }
 
   pick() {
@@ -431,6 +441,7 @@ export class ChimneyViewer {
   dispose() {
     this.renderer.setAnimationLoop(null);
     this.resizeObs.disconnect();
+    this.callouts.dispose();
     this.modelRoot.traverse((o) => o.geometry?.dispose());
     this.mats.all().forEach((m) => m.dispose());
     this.renderer.dispose();
