@@ -187,10 +187,12 @@ export function computeDesign(cfg) {
 
   // ── E · Details ──
   const ladderOn = c.ladderType !== 'None';
-  const ladderTop = H + 1.0;
+  // The ladder stops at the roof edge, or at step-off height above a top platform.
+  const ladderTop = c.platformType === 'Top Platform' ? H - 1.5 + 1.1 : H;
   const ladder = ladderOn
     ? {
         type: c.ladderType,
+        top: ladderTop,
         angle: Number(c.ladderAngle),
         length: ladderTop - 0.3,
         steps: Math.min(450, Math.floor((ladderTop - 0.3) * 3)),
@@ -294,7 +296,7 @@ function toParams(v, medium, cfg) {
     shellLook: MATERIALS[v.shellMat].look, linerLook: MATERIALS[v.linerMat].look, insType: v.insType,
     inletShape: v.inlet.shape, inletR: v.inlet.size / 2000, inletH: v.inlet.height,
     doorR: v.door.dia / 2000, doorH: v.door.height, doorAz: v.door.angle,
-    ladderOn: lad ? 1 : 0, ladderAz: lad ? lad.angle : 0, ladderTop: v.H + 1,
+    ladderOn: lad ? 1 : 0, ladderAz: lad ? lad.angle : 0, ladderTop: lad ? lad.top : v.H,
     cageFrom: lad && lad.cage ? lad.cage[0] : 0, cageTo: lad && lad.cage ? lad.cage[1] : 0,
     harness: lad && lad.harness ? 1 : 0,
     ladderMissing: isEmpty(cfg.ladderType) ? 1 : 0,
