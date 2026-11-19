@@ -99,8 +99,8 @@ export function renderOrder(root, id) {
   function renderLegend() {
     const v = design.values;
     const missing = [];
-    if (design.params.laddersMissing) missing.push('Ladders');
-    if (design.params.platformsMissing) missing.push('Platforms');
+    if (design.params.laddersMissing) missing.push('Ladder');
+    if (design.params.platformsMissing) missing.push('Platform');
     const leg = $('[data-legend]');
     const [lo, hi] = heatRange(v.Tf, v.Tout);
     const pos = (T) => `${((T - lo) / (hi - lo)) * 100}%`;

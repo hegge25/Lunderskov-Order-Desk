@@ -42,8 +42,9 @@ const isEmpty = (v) => v === null || v === undefined || v === '';
 export function fieldLabel(key, cfg) {
   const it = parseItemKey(key);
   if (it) {
-    const n = FIELDS[it.list].noun;
-    return `${n[0].toUpperCase() + n.slice(1)} ${it.index + 1} ${ITEM_FIELDS[FIELDS[it.list].item][it.prop].label.toLowerCase()}`;
+    const f = FIELDS[it.list];
+    const n = f.noun[0].toUpperCase() + f.noun.slice(1);
+    return `${f.max > 1 ? `${n} ${it.index + 1}` : n} ${ITEM_FIELDS[FIELDS[it.list].item][it.prop].label.toLowerCase()}`;
   }
   const l = FIELDS[key].label;
   return typeof l === 'function' ? l(cfg) : l;
@@ -211,7 +212,8 @@ export function computeDesign(cfg) {
     const arc = Number(pl.arc);
     const width = Number(pl.width);
     return {
-      type: pl.type, angle: Number(pl.angle), arc, width, elev: elevOf(pl.type),
+      // the platform is centred on the ladder that serves it
+      type: pl.type, angle: Number((c.ladders || [])[0]?.angle ?? 0), arc, width, elev: elevOf(pl.type),
       area: (arc / 360) * Math.PI * ((Ro + width) ** 2 - Ro ** 2),
     };
   });

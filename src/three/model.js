@@ -328,7 +328,7 @@ export function buildChimney(p, ctx) {
       add(g, new THREE.CylinderGeometry(0.01, 0.01, len, 5).translate(0, y0 + len / 2, ladderZ + 0.03), M.std('ladder', 'line', 'yellow'), 'ladder');
     }
     const extra = cl > 0.5 ? ' · back support' : L.harness ? ' · safety line' : '';
-    callout(g, `ladder-${li}`, 'ladder', `Ladder ${li + 1} · <b>${nR}</b> steps${extra}`, new THREE.Vector3(0, Math.min(H * (0.3 + li * 0.08), H - 4), ladderZ),
+    callout(g, `ladder-${li}`, 'ladder', `Ladder${p.ladders.length > 1 ? ` ${li + 1}` : ""} · <b>${nR}</b> steps${extra}`, new THREE.Vector3(0, Math.min(H * (0.3 + li * 0.08), H - 4), ladderZ),
       { maxDist: 400, slide: [1, H], target: { group: 'ladder', index: li } });
   });
   if (p.laddersMissing) {

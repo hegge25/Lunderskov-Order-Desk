@@ -17,10 +17,10 @@ const full = {
   inletShape: 'Round', inletSize: 400, inletHeight: 2,
   doorDiameter: 600, doorHeight: 1, doorAngle: 0,
   ladders: [{ type: 'With Back Support at Top', angle: 270 }],
-  platforms: [{ type: 'Top Platform', angle: 270, arc: 180, width: 1 }],
+  platforms: [{ type: 'Top Platform', arc: 180, width: 1 }],
 };
 const L = (type, angle) => ({ type, angle });
-const P = (type, angle, arc = 180, width = 1) => ({ type, angle, arc, width });
+const P = (type, arc = 180, width = 1) => ({ type, arc, width });
 
 export function seedOrders() {
   return [
@@ -32,12 +32,12 @@ export function seedOrders() {
     {
       id: 'LC-2026-0409', customer: 'Hanse BioEnergie GmbH', project: 'Waste-to-energy stack',
       contact: 'Jonas Kragh', created: ago(16), stage: 'design',
-      config: { ...full, flowRate: 50, flueTemp: 620, medium: 'Waste Incineration', site: 'DE-Munchen', ladders: [L('With Back Support in all Length', 270), L('Standard Ladder', 180)], platforms: [P('Measuring Platform', 270, 360), P('Top Platform', 180, 120)] },
+      config: { ...full, flowRate: 50, flueTemp: 620, medium: 'Waste Incineration', site: 'DE-Munchen', ladders: [L('With Back Support in all Length', 270)], platforms: [P('Measuring Platform', 360)] },
     },
     {
       id: 'LC-2026-0405', customer: 'Fjordvarme AS', project: 'Oil peak-load boiler',
       contact: 'Mette Lund', created: ago(20), stage: 'production',
-      config: { ...full, flowRate: 15, flueTemp: 600, medium: 'Oil', site: 'NO-Bergen', ladders: [L('With Safety Harness', 180)], platforms: [P('Top Platform', 180, 120)] },
+      config: { ...full, flowRate: 15, flueTemp: 600, medium: 'Oil', site: 'NO-Bergen', ladders: [L('With Safety Harness', 180)], platforms: [P('Top Platform', 120)] },
     },
     {
       id: 'LC-2026-0414', customer: 'Øresund Kraft AB', project: 'Gas engine plant',
@@ -47,12 +47,12 @@ export function seedOrders() {
     {
       id: 'LC-2026-0401', customer: 'Bałtyk Ciepło Sp. z o.o.', project: 'Coal unit retrofit',
       contact: 'Jonas Kragh', created: ago(26), stage: 'delivery',
-      config: { ...full, flowRate: 45, flueTemp: 800, medium: 'Coal', site: 'PL-Gdansk', ladders: [L('With Back Support in all Length', 270), L('With Back Support at Top', 180)], platforms: [P('Service Platform', 270, 360, 1.5), P('Top Platform', 180, 180)] },
+      config: { ...full, flowRate: 45, flueTemp: 800, medium: 'Coal', site: 'PL-Gdansk', ladders: [L('With Back Support in all Length', 270)], platforms: [P('Service Platform', 360, 1.5)] },
     },
     {
       id: 'LC-2026-0410', customer: 'Rijnmond Afvalenergie BV', project: 'Line 2 replacement',
       contact: 'Sara Holm', created: ago(10), stage: 'design',
-      config: { ...full, flowRate: 38, flueTemp: 560, medium: 'Waste Incineration', site: 'NL-Rotterdam', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform', 180)] },
+      config: { ...full, flowRate: 38, flueTemp: 560, medium: 'Waste Incineration', site: 'NL-Rotterdam', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform')] },
     },
     {
       id: 'LC-2026-0413', customer: 'Vejle Papirfabrik', project: 'Drying hall exhaust',
@@ -62,12 +62,12 @@ export function seedOrders() {
     {
       id: 'LC-2026-0396', customer: 'Pohjola Lämpö Oy', project: 'District heating, Oulu',
       contact: 'Sara Holm', created: ago(45), stage: 'done',
-      config: { ...full, flowRate: 18, flueTemp: 540, medium: 'Biomass', site: 'FI-Oulu', platforms: [P('Top Platform', 270, 90)] },
+      config: { ...full, flowRate: 18, flueTemp: 540, medium: 'Biomass', site: 'FI-Oulu', platforms: [P('Top Platform', 90)] },
     },
     {
       id: 'LC-2026-0415', customer: 'Kystkraft ApS', project: 'Harbour boiler, special site',
       contact: 'Jonas Kragh', created: ago(2), stage: 'quote',
-      config: { ...full, flowRate: 58, flueTemp: 480, medium: 'Biomass', site: 'OTHER', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform', 180, 180, 2)] },
+      config: { ...full, flowRate: 58, flueTemp: 480, medium: 'Biomass', site: 'OTHER', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform', 180, 2)] },
     },
   ];
 }

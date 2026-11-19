@@ -64,7 +64,7 @@ const MAIN = [
     scroll: true,
     place: 'right',
     title: 'Missing information',
-    body: `<p>The customer hasn't said whether they want ladders or platforms, which in the case study designers only find out late. The model shows them as orange ghosts, and <b>Release to design</b> is blocked.</p>
+    body: `<p>The customer hasn't said whether they want a ladder or a platform, which in the case study designers only find out late. The model shows them as orange ghosts, and <b>Release to design</b> is blocked.</p>
       <p><b>Try it:</b> click <i>Add ladder</i>.</p>`,
   },
   {

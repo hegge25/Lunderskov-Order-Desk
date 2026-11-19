@@ -64,15 +64,15 @@ export const FIELDS = {
     label: 'Door placed at', type: 'segmented', options: [0, 90, 180, 270], unit: '°',
     pvm: 'Cleaning Door · Placed [0; 90; 180; 270]°',
   },
-  // Ladders and platforms are lists. The PVM allows [0;1] of each; the prototype
-  // extends that to several, one per position.
+  // Ladder and platform are optional parts. They are lists so "not specified yet" (null)
+  // differs from "none" ([]); `max` is the PVM cardinality, [0;1] for both.
   ladders: {
-    label: 'Safety ladders', type: 'list', item: 'ladder', noun: 'ladder', max: 3,
-    pvm: 'Safety Ladder [0–3] (PVM: [0;1])',
+    label: 'Safety ladder', type: 'list', item: 'ladder', noun: 'ladder', max: 1,
+    pvm: 'Safety Ladder [0;1]',
   },
   platforms: {
-    label: 'Platforms', type: 'list', item: 'platform', noun: 'platform', max: 3,
-    pvm: 'Platform [0–3] (PVM: [0, 1])',
+    label: 'Platform', type: 'list', item: 'platform', noun: 'platform', max: 1,
+    pvm: 'Platform [0, 1]',
   },
 };
 
@@ -81,8 +81,8 @@ export const FIELD_GROUPS = [
   { id: 'site', label: 'Site', fields: ['site'] },
   { id: 'inlet', label: 'Flue gas inlet', fields: ['inletShape', 'inletSize', 'inletHeight'] },
   { id: 'door', label: 'Cleaning door', fields: ['doorDiameter', 'doorHeight', 'doorAngle'] },
-  { id: 'ladder', label: 'Safety ladders', fields: ['ladders'] },
-  { id: 'platform', label: 'Platforms', fields: ['platforms'] },
+  { id: 'ladder', label: 'Safety ladder', fields: ['ladders'] },
+  { id: 'platform', label: 'Platform', fields: ['platforms'] },
 ];
 
 // Fields of one list item.
@@ -93,7 +93,6 @@ export const ITEM_FIELDS = {
   },
   platform: {
     type: { label: 'Type', type: 'select', options: PLATFORM_TYPES, pvm: 'Platform · Top, Measuring or Service' },
-    angle: { label: 'Centred at', type: 'segmented', options: [0, 90, 180, 270], unit: '°', pvm: 'Not in the PVM: where the arc is centred' },
     arc: { label: 'Arc', type: 'segmented', options: [90, 120, 180, 360], unit: '°', pvm: 'Platform · Degrees [90; 120; 180; 360]' },
     width: { label: 'Width', type: 'number', unit: 'm', min: 0.5, max: 2, step: 0.1, pvm: 'Platform · Width [0,5–2] m' },
   },
@@ -121,7 +120,7 @@ export function newItem(list, cfg) {
   }
   const used = new Set(platforms.map((p) => p.type));
   const type = PLATFORM_TYPES.find((t) => !used.has(t)) || 'Service Platform';
-  return { type, angle: ladders[0]?.angle ?? 270, arc: 180, width: 1 };
+  return { type, arc: 180, width: 1 };
 }
 
 // The flue gas inlet always faces the customer's plant (90°). Not a PVM option.

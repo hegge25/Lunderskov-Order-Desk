@@ -36,9 +36,8 @@ function rows(d) {
       ['foundation', 'Dead weight', `${num(v.weight / 1000, 1)} t`],
     ],
     E: [
-      ['ladder', 'Ladders', v.ladders.length ? `${v.ladders.length} × · ${v.ladders.map((l) => `${l.angle}°`).join(', ')}` : '—'],
-      ['ladder', 'Ladder steps', v.ladders.length ? `${v.ladders.reduce((s, l) => s + l.steps, 0)}` : '—'],
-      ['platform', 'Platforms', v.platforms.length ? v.platforms.map((p) => `+${num(p.elev, 1)} m`).join(', ') : '—'],
+      ['ladder', 'Ladder', v.ladders.length ? v.ladders.map((l) => `${l.steps} steps @ ${l.angle}°`).join(', ') : '—'],
+      ['platform', 'Platform', v.platforms.length ? v.platforms.map((p) => `+${num(p.elev, 1)} m, ${p.arc}°`).join(', ') : '—'],
       ['door', 'Cleaning door', `Ø ${v.door.dia} @ ${v.door.angle}°`],
       ['inlet', 'Inlet', `${v.inlet.shape} ${v.inlet.size} mm`],
       ['lights', 'Aviation marking', v.aviation ? 'Required' : '—'],

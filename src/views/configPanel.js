@@ -1,5 +1,5 @@
 // Left column: the customer view of the PVM as a form, checked live against the intervals.
-// Ladders and platforms are lists: items can be added and removed.
+// Ladder and platform are optional parts, added or removed up to the PVM cardinality.
 import { FIELDS, FIELD_GROUPS, ITEM_FIELDS, fieldDef, parseItemKey, newItem } from '../config/pvm.js';
 import { SITES } from '../config/rules.js';
 import { fieldLabel, isActive } from '../engine/design.js';
@@ -56,9 +56,9 @@ function listHtml(list, cfg) {
     return h`
       <div class="field list-missing" data-field="${list}">
         <div class="f-top"><label>${f.label}</label><span class="f-state"></span></div>
-        <p class="lm-text">The customer has not said whether they want ${f.noun}s.</p>
+        <p class="lm-text">The customer has not said whether they want a ${f.noun}.</p>
         <div class="lm-actions">
-          <button type="button" class="btn sm" data-none="${list}">No ${f.noun}s</button>
+          <button type="button" class="btn sm" data-none="${list}">No ${f.noun}</button>
           <button type="button" class="btn sm primary" data-add="${list}">Add ${f.noun}</button>
         </div>
         <div class="f-msg"></div>
@@ -68,13 +68,13 @@ function listHtml(list, cfg) {
   return h`
     ${items.map((it, i) => h`
       <div class="item" data-item="${list}.${i}">
-        <div class="item-head"><b>${cap(f.noun)} ${i + 1}</b><button type="button" class="x" data-remove="${list}.${i}">Remove</button></div>
+        <div class="item-head"><b>${cap(f.noun)}${f.max > 1 ? ` ${i + 1}` : ''}</b><button type="button" class="x" data-remove="${list}.${i}">Remove</button></div>
         ${Object.entries(defs).map(([prop, def]) => fieldHtml(`${list}.${i}.${prop}`, def, it[prop], def.label))}
       </div>`)}
-    ${items.length === 0 ? `<p class="list-empty">No ${f.noun}s.</p>` : ''}
+    ${items.length === 0 ? `<p class="list-empty">No ${f.noun}.</p>` : ''}
     ${items.length < f.max
       ? `<button type="button" class="add-item" data-add="${list}">+ Add ${f.noun}</button>`
-      : `<p class="list-empty">Maximum ${f.max} ${f.noun}s.</p>`}
+      : f.max > 1 ? `<p class="list-empty">Maximum ${f.max} ${f.noun}s.</p>` : ''}
     <p class="list-note">${esc(f.pvm)}</p>`;
 }
 
