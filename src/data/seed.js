@@ -1,0 +1,83 @@
+// Fictional demo orders. Dates are relative to today so the board always looks live.
+import { addWorkingDays } from '../engine/timeline.js';
+
+const ago = (n) => {
+  // n working days before today
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  let left = n;
+  while (left > 0) {
+    d.setDate(d.getDate() - 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) left--;
+  }
+  return d.toISOString();
+};
+
+const full = {
+  inletShape: 'Round', inletSize: 400, inletHeight: 2,
+  doorDiameter: 600, doorHeight: 1, doorAngle: 0,
+  ladderType: 'With Back Support at Top', ladderAngle: 270,
+  platformType: 'Top Platform', platformArc: 180, platformWidth: 1,
+};
+
+export function seedOrders() {
+  return [
+    {
+      id: 'LC-2026-0412', customer: 'Nordvarme A/S', project: 'Biomass boiler line 3',
+      contact: 'Mette Lund', created: ago(11), stage: 'spec',
+      config: { ...full, flowRate: 30, flueTemp: 520, medium: 'Biomass', site: 'DK-Kolding', ladderType: null, platformType: null },
+    },
+    {
+      id: 'LC-2026-0409', customer: 'Hanse BioEnergie GmbH', project: 'Waste-to-energy stack',
+      contact: 'Jonas Kragh', created: ago(16), stage: 'design',
+      config: { ...full, flowRate: 50, flueTemp: 620, medium: 'Waste Incineration', site: 'DE-Munchen', ladderType: 'With Back Support in all Length', platformType: 'Measuring Platform', platformArc: 360 },
+    },
+    {
+      id: 'LC-2026-0405', customer: 'Fjordvarme AS', project: 'Oil peak-load boiler',
+      contact: 'Mette Lund', created: ago(20), stage: 'production',
+      config: { ...full, flowRate: 15, flueTemp: 600, medium: 'Oil', site: 'NO-Bergen', ladderType: 'With Safety Harness', ladderAngle: 180, platformArc: 120 },
+    },
+    {
+      id: 'LC-2026-0414', customer: 'Øresund Kraft AB', project: 'Gas engine plant',
+      contact: 'Sara Holm', created: ago(1), stage: 'quote',
+      config: { ...full, flowRate: 12, flueTemp: 400, medium: 'Natural Gas', site: 'SE-Malmo', inletShape: 'Square', inletSize: 300, ladderType: 'Standard Ladder', platformType: 'None' },
+    },
+    {
+      id: 'LC-2026-0401', customer: 'Bałtyk Ciepło Sp. z o.o.', project: 'Coal unit retrofit',
+      contact: 'Jonas Kragh', created: ago(26), stage: 'delivery',
+      config: { ...full, flowRate: 45, flueTemp: 800, medium: 'Coal', site: 'PL-Gdansk', ladderType: 'With Back Support in all Length', platformType: 'Service Platform', platformArc: 360, platformWidth: 1.5 },
+    },
+    {
+      id: 'LC-2026-0410', customer: 'Rijnmond Afvalenergie BV', project: 'Line 2 replacement',
+      contact: 'Sara Holm', created: ago(10), stage: 'design',
+      config: { ...full, flowRate: 38, flueTemp: 560, medium: 'Waste Incineration', site: 'NL-Rotterdam', ladderAngle: 180 },
+    },
+    {
+      id: 'LC-2026-0413', customer: 'Vejle Papirfabrik', project: 'Drying hall exhaust',
+      contact: 'Mette Lund', created: ago(4), stage: 'order',
+      config: { ...full, flowRate: 22, flueTemp: 430, medium: 'Gas', site: 'DK-Aarhus', ladderType: 'Standard Ladder', platformType: 'None' },
+    },
+    {
+      id: 'LC-2026-0396', customer: 'Pohjola Lämpö Oy', project: 'District heating, Oulu',
+      contact: 'Sara Holm', created: ago(45), stage: 'done',
+      config: { ...full, flowRate: 18, flueTemp: 540, medium: 'Biomass', site: 'FI-Oulu', platformArc: 90 },
+    },
+    {
+      id: 'LC-2026-0415', customer: 'Kystkraft ApS', project: 'Harbour boiler, special site',
+      contact: 'Jonas Kragh', created: ago(2), stage: 'quote',
+      config: { ...full, flowRate: 58, flueTemp: 480, medium: 'Biomass', site: 'OTHER', ladderAngle: 180, platformWidth: 2 },
+    },
+  ];
+}
+
+export function newOrderConfig() {
+  return {
+    flowRate: 25, flueTemp: 500, medium: 'Biomass', site: 'DK-Kolding',
+    inletShape: 'Round', inletSize: 300, inletHeight: 2,
+    doorDiameter: 600, doorHeight: 1, doorAngle: 0,
+    ladderType: null, ladderAngle: 270,
+    platformType: null, platformArc: 180, platformWidth: 1,
+  };
+}
+
+export { addWorkingDays };
