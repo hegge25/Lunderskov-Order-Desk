@@ -9,7 +9,7 @@ const TOP = 54;          // keep clear of the toolbar
 const BOTTOM = 58;       // keep clear of the footer chips
 
 export class Callouts {
-  constructor(container, { onHover } = {}) {
+  constructor(container, { onHover, onClick } = {}) {
     this.root = document.createElement('div');
     this.root.className = 'callouts';
     this.svg = document.createElementNS(SVG, 'svg');
@@ -18,6 +18,7 @@ export class Callouts {
     container.appendChild(this.root);
     this.items = new Map();
     this.onHover = onHover;
+    this.onClick = onClick;
     this.v = new THREE.Vector3();
     this.a = new THREE.Vector3();
     this.right = new THREE.Vector3();
@@ -33,6 +34,7 @@ export class Callouts {
         const el = document.createElement('div');
         el.addEventListener('mouseenter', () => this.onHover?.(it.part));
         el.addEventListener('mouseleave', () => this.onHover?.(null));
+        el.addEventListener('click', () => this.onClick?.(it.target, it.part));
         const line = document.createElementNS(SVG, 'polyline');
         const dot = document.createElementNS(SVG, 'circle');
         dot.setAttribute('r', '3.2');
@@ -41,7 +43,7 @@ export class Callouts {
         it = { el, line, dot, x: null, y: null, side: null, html: null };
         this.items.set(s.id, it);
       }
-      Object.assign(it, { obj: s.obj, kind: s.kind || 'dim', part: s.part, maxDist: s.maxDist ?? Infinity, slide: s.slide, y0: s.obj.position.y });
+      Object.assign(it, { obj: s.obj, kind: s.kind || 'dim', part: s.part, target: s.target, maxDist: s.maxDist ?? Infinity, slide: s.slide, y0: s.obj.position.y });
       const cls = `callout ${s.cls || ''} ${it.kind}`;
       if (it.el.className !== cls) it.el.className = cls;
       if (it.html !== s.html) {

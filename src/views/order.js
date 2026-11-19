@@ -3,7 +3,7 @@ import { computeDesign } from '../engine/design.js';
 import { ChimneyViewer } from '../three/viewer.js';
 import { HEAT_STOPS, heatRange } from '../three/kit.js';
 import { renderStrip } from './strip.js';
-import { mountConfig, updateConfig } from './configPanel.js';
+import { mountConfig, updateConfig, focusTarget } from './configPanel.js';
 import { renderDerived, markParts, flashPart } from './derivedPanel.js';
 import { dkk, h, esc } from '../format.js';
 
@@ -63,6 +63,10 @@ export function renderOrder(root, id) {
     toggles: savedToggles,
     onHover: (part) => markParts(derEl, part),
     onPick: (part) => flashPart(derEl, part),
+    onCallout: (target, part) => {
+      if (target) focusTarget(cfgEl, target);
+      if (part) flashPart(derEl, part);
+    },
     onPreset: (name) => viewEl.querySelectorAll('[data-pre]').forEach((b) => b.classList.toggle('on', b.dataset.pre === name)),
   });
 
@@ -94,8 +98,8 @@ export function renderOrder(root, id) {
   function renderLegend() {
     const v = design.values;
     const missing = [];
-    if (design.params.ladderMissing) missing.push('Ladder');
-    if (design.params.platformMissing) missing.push('Platform');
+    if (design.params.laddersMissing) missing.push('Ladders');
+    if (design.params.platformsMissing) missing.push('Platforms');
     const leg = $('[data-legend]');
     const [lo, hi] = heatRange(v.Tf, v.Tout);
     const pos = (T) => `${((T - lo) / (hi - lo)) * 100}%`;

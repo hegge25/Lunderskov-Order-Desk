@@ -72,7 +72,7 @@ export function buildChimney(p, ctx) {
     const o = new THREE.Object3D();
     o.position.copy(pos);
     parent.add(o);
-    callouts.push({ id, part, html, obj: o, kind: opt.kind || 'dim', maxDist: opt.maxDist, cls: opt.cls, slide: opt.slide });
+    callouts.push({ id, part, html, obj: o, kind: opt.kind || 'dim', maxDist: opt.maxDist, cls: opt.cls, slide: opt.slide, target: opt.target });
   };
   const lineMat = M.line('dim', { color: 0xdfe6ee, transparent: true, opacity: 0.75 });
   const lines = (parent, pts, kind = 'dim') => {
@@ -284,20 +284,19 @@ export function buildChimney(p, ctx) {
     callout(g, 'door', 'door', `Cleaning door Ø <b>${Math.round(r * 2000)}</b> · R <b>${p.doorH.toFixed(1)} m</b>`, new THREE.Vector3(0, p.doorH, z + 0.05), { maxDist: 120 });
   }
 
-  // ── Safety ladder ──
+  // ── Safety ladders ──
   const ladderZ = Ro + 0.26;
-  if (p.ladderOn) {
+  const mtx = new THREE.Matrix4();
+  p.ladders.forEach((L, li) => {
     const g = new THREE.Group();
-    g.rotation.y = p.ladderAz * DEG;
+    g.rotation.y = L.az * DEG;
     root.add(g);
     const y0 = 0.3;
-    const y1 = p.ladderTop;
-    const len = y1 - y0;
+    const len = L.top - y0;
     const lm = M.std('ladder', 'steel', 'galv');
     for (const x of [-0.24, 0.24]) add(g, new THREE.CylinderGeometry(0.025, 0.025, len, 8).translate(x, y0 + len / 2, ladderZ), lm, 'ladder');
     const nR = Math.max(1, Math.floor(len * 3));
     const rungs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 0.48, 6).rotateZ(Math.PI / 2), lm, nR);
-    const mtx = new THREE.Matrix4();
     for (let i = 0; i < nR; i++) rungs.setMatrixAt(i, mtx.makeTranslation(0, y0 + (i + 0.5) / 3, ladderZ));
     rungs.userData.part = 'ladder';
     rungs.castShadow = true;
@@ -310,44 +309,47 @@ export function buildChimney(p, ctx) {
     }
     br.userData.part = 'ladder';
     g.add(br);
-    if (p.cageTo - p.cageFrom > 0.5) {
+    const cl = L.cageTo - L.cageFrom;
+    if (cl > 0.5) {
       const cz = ladderZ + 0.05;
       const R = 0.38;
-      const hoopG = arcTorus(R, 0.016, -115 * DEG, 115 * DEG, 24, 5);
-      const n = Math.max(2, Math.floor((p.cageTo - p.cageFrom) / 0.9) + 1);
-      const hoops = new THREE.InstancedMesh(hoopG, lm, n);
-      for (let i = 0; i < n; i++) hoops.setMatrixAt(i, mtx.makeTranslation(0, p.cageFrom + (i * (p.cageTo - p.cageFrom)) / (n - 1), cz));
+      const n = Math.max(2, Math.floor(cl / 0.9) + 1);
+      const hoops = new THREE.InstancedMesh(arcTorus(R, 0.016, -115 * DEG, 115 * DEG, 24, 5), lm, n);
+      for (let i = 0; i < n; i++) hoops.setMatrixAt(i, mtx.makeTranslation(0, L.cageFrom + (i * cl) / (n - 1), cz));
       hoops.userData.part = 'ladder';
       hoops.castShadow = true;
       g.add(hoops);
-      const cl = p.cageTo - p.cageFrom;
       for (const a of [-80, -40, 0, 40, 80]) {
         const v = polar(R, a * DEG);
-        add(g, new THREE.CylinderGeometry(0.012, 0.012, cl, 5).translate(v.x, p.cageFrom + cl / 2, cz + v.z), lm, 'ladder');
+        add(g, new THREE.CylinderGeometry(0.012, 0.012, cl, 5).translate(v.x, L.cageFrom + cl / 2, cz + v.z), lm, 'ladder');
       }
     }
-    if (p.harness) {
+    if (L.harness) {
       add(g, new THREE.CylinderGeometry(0.01, 0.01, len, 5).translate(0, y0 + len / 2, ladderZ + 0.03), M.std('ladder', 'line', 'yellow'), 'ladder');
     }
-    callout(g, 'ladder', 'ladder', `Ladder · <b>${nR}</b> steps${p.cageTo - p.cageFrom > 0.5 ? ' · back support' : p.harness ? ' · safety line' : ''}`, new THREE.Vector3(0, Math.min(H * 0.3, H - 4), ladderZ), { maxDist: 400, slide: [1, H] });
-  } else if (p.ladderMissing) {
+    const extra = cl > 0.5 ? ' · back support' : L.harness ? ' · safety line' : '';
+    callout(g, `ladder-${li}`, 'ladder', `Ladder ${li + 1} · <b>${nR}</b> steps${extra}`, new THREE.Vector3(0, Math.min(H * (0.3 + li * 0.08), H - 4), ladderZ),
+      { maxDist: 400, slide: [1, H], target: { group: 'ladder', index: li } });
+  });
+  if (p.laddersMissing) {
     const g = new THREE.Group();
     root.add(g);
     const gm = M.basic('ghost', 'ladder', { color: 0xffa94d, transparent: true, opacity: 0.22, depthWrite: false });
     add(g, new THREE.BoxGeometry(0.55, H, 0.08).translate(0, H / 2 + 0.3, ladderZ), gm, 'ghost', { cast: false, receive: false });
-    callout(g, 'ghost-ladder', 'ghost', '<i></i>Ladder not specified', new THREE.Vector3(0, H * 0.4, ladderZ), { kind: 'ghost', cls: 'ghost', slide: [1, H] });
+    callout(g, 'ghost-ladder', 'ghost', '<i></i>Ladder not specified', new THREE.Vector3(0, H * 0.4, ladderZ),
+      { kind: 'ghost', cls: 'ghost', slide: [1, H], target: { group: 'ladder' } });
   }
 
-  // ── Platform ──
-  if (p.platformOn) {
+  // ── Platforms ──
+  p.platforms.forEach((P, pi) => {
     const g = new THREE.Group();
-    g.rotation.y = p.platformAz * DEG;
-    g.position.y = p.platformElev;
+    g.rotation.y = P.az * DEG;
+    g.position.y = P.elev;
     root.add(g);
-    const W = p.platformW;
-    const full = p.platformArc >= 359;
-    const a0 = full ? 0 : -(p.platformArc * DEG) / 2;
-    const a1 = full ? Math.PI * 2 : (p.platformArc * DEG) / 2;
+    const W = P.w;
+    const full = P.arc >= 359;
+    const a0 = full ? 0 : -(P.arc * DEG) / 2;
+    const a1 = full ? Math.PI * 2 : (P.arc * DEG) / 2;
     const Rout = Ro + W;
     const pm = M.std('platform', 'plate', 'galv', { side: THREE.DoubleSide });
     add(g, annulusSector(Ro + 0.02, Rout, a0, a1, 64), pm, 'platform');
@@ -360,10 +362,8 @@ export function buildChimney(p, ctx) {
     const arcLen = (a1 - a0) * Rr;
     const nP = Math.max(2, Math.ceil(arcLen / 1.2)) + (full ? 0 : 1);
     const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.022, 0.022, 1.5, 6).translate(0, 0.75, 0), rm, nP);
-    const mtx = new THREE.Matrix4();
     for (let i = 0; i < nP; i++) {
-      const a = a0 + ((a1 - a0) * i) / (full ? nP : nP - 1);
-      const v = polar(Rr, a);
+      const v = polar(Rr, a0 + ((a1 - a0) * i) / (full ? nP : nP - 1));
       posts.setMatrixAt(i, mtx.makeTranslation(v.x, 0, v.z));
     }
     posts.userData.part = 'platform';
@@ -380,15 +380,18 @@ export function buildChimney(p, ctx) {
       const a = a0 + ((a1 - a0) * (i + 0.5)) / nS;
       g.add(Object.assign(cylinderBetween(polar(Ro, a, -Math.min(1.2, W)), polar(Ro + W * 0.92, a, -0.05), 0.035, sm), { userData: { part: 'platform' } }));
     }
-    callout(g, 'platform', 'platform', `${p.platformType} <b>+${p.platformElev.toFixed(1)} m</b> · ${Math.round(p.platformArc)}°`, polar(Rout, 0, 0.75), { maxDist: 400 });
-  } else if (p.platformMissing) {
+    callout(g, `platform-${pi}`, 'platform', `${P.type} <b>+${P.elev.toFixed(1)} m</b> · ${Math.round(P.arc)}° arc`, polar(Rout, full ? 0 : a1 * 0.6, 0.75),
+      { maxDist: 400, target: { group: 'platform', index: pi } });
+  });
+  if (p.platformsMissing) {
     const g = new THREE.Group();
     g.position.y = H - 1.5;
     root.add(g);
     const gm = M.basic('ghost', 'platform', { color: 0xffa94d, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
     add(g, annulusSector(Ro, Ro + 1, -Math.PI / 2, Math.PI / 2, 48), gm, 'ghost', { cast: false, receive: false });
     add(g, new THREE.CylinderGeometry(Ro + 1, Ro + 1, 1.5, 48, 1, true, -Math.PI / 2, Math.PI).translate(0, 0.75, 0), gm, 'ghost', { cast: false, receive: false });
-    callout(g, 'ghost-platform', 'ghost', '<i></i>Platform not specified', polar(Ro + 1, 0, 0.75), { kind: 'ghost', cls: 'ghost' });
+    callout(g, 'ghost-platform', 'ghost', '<i></i>Platform not specified', polar(Ro + 1, 0, 0.75),
+      { kind: 'ghost', cls: 'ghost', target: { group: 'platform' } });
   }
 
   // ── Guy wires ──

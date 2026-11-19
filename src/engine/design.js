@@ -1,7 +1,7 @@
 // The rules engine. It plays Designers A–E from the case: capacity, thermal, emission,
 // structure and details. The numbers are dummy but the dependencies follow the case.
 
-import { FIELDS, MEDIA, INLET_ANGLE } from '../config/pvm.js';
+import { FIELDS, ITEM_FIELDS, MEDIA, INLET_ANGLE, fieldDef, parseItemKey } from '../config/pvm.js';
 import {
   SITES, OTHER_SITE, WIND_ZONES, FILTERS, MATERIALS, INSULATION, CONSTANTS as K,
 } from '../config/rules.js';
@@ -22,17 +22,16 @@ const FIELD_STEP = {
   flowRate: 'A', flueTemp: 'B', medium: 'C', site: 'C',
   inletShape: 'E', inletSize: 'E', inletHeight: 'E',
   doorDiameter: 'E', doorHeight: 'E', doorAngle: 'E',
-  ladderType: 'E', ladderAngle: 'E',
-  platformType: 'E', platformArc: 'E', platformWidth: 'E',
+  ladders: 'E', platforms: 'E',
 };
+const stepOf = (key) => FIELD_STEP[parseItemKey(key)?.list || key];
 
 // Values used to draw a model while fields are still missing.
 const RENDER_DEFAULTS = {
   flowRate: 25, flueTemp: 500, medium: 'Biomass', site: 'DK-Kolding',
   inletShape: 'Round', inletSize: 300, inletHeight: 2,
   doorDiameter: 600, doorHeight: 1, doorAngle: 0,
-  ladderType: 'None', ladderAngle: 0,
-  platformType: 'None', platformArc: 180, platformWidth: 1,
+  ladders: [], platforms: [],
 };
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -41,12 +40,23 @@ const roundTo = (v, step) => Math.round(v / step) * step;
 const isEmpty = (v) => v === null || v === undefined || v === '';
 
 export function fieldLabel(key, cfg) {
+  const it = parseItemKey(key);
+  if (it) {
+    const n = FIELDS[it.list].noun;
+    return `${n[0].toUpperCase() + n.slice(1)} ${it.index + 1} ${ITEM_FIELDS[FIELDS[it.list].item][it.prop].label.toLowerCase()}`;
+  }
   const l = FIELDS[key].label;
   return typeof l === 'function' ? l(cfg) : l;
 }
 export function isActive(key, cfg) {
-  const f = FIELDS[key];
+  const f = fieldDef(key);
   return !f.activeIf || f.activeIf(cfg);
+}
+function checkValue(f, v, key) {
+  if (isEmpty(v)) return { state: 'missing', msg: 'Not specified' };
+  if (f.type === 'number' && (v < f.min || v > f.max)) return { state: 'eto', msg: `Outside PVM interval ${f.min}–${f.max} ${f.unit}` };
+  if (f.eto && f.eto.includes(v)) return { state: 'eto', msg: key === 'site' ? 'Site not in regulation database' : 'Not a PVM option' };
+  return { state: 'ok' };
 }
 
 export function checkFields(cfg) {
@@ -54,13 +64,16 @@ export function checkFields(cfg) {
   for (const key of Object.keys(FIELDS)) {
     const f = FIELDS[key];
     const v = cfg[key];
-    if (!isActive(key, cfg)) status[key] = { state: 'inactive' };
-    else if (isEmpty(v)) status[key] = { state: 'missing', msg: 'Not specified' };
-    else if (f.type === 'number' && (v < f.min || v > f.max))
-      status[key] = { state: 'eto', msg: `Outside PVM interval ${f.min}–${f.max} ${f.unit}` };
-    else if (f.eto && f.eto.includes(v))
-      status[key] = { state: 'eto', msg: key === 'site' ? 'Site not in regulation database' : 'Not a PVM option' };
-    else status[key] = { state: 'ok' };
+    if (f.type === 'list') {
+      // null = the customer has not said; [] = explicitly none
+      status[key] = v == null ? { state: 'missing', msg: 'Not specified' } : { state: 'ok' };
+      (v || []).forEach((item, i) => {
+        for (const [prop, def] of Object.entries(ITEM_FIELDS[f.item])) {
+          status[`${key}.${i}.${prop}`] = checkValue(def, item[prop], prop);
+        }
+      });
+    } else if (!isActive(key, cfg)) status[key] = { state: 'inactive' };
+    else status[key] = checkValue(f, v, key);
   }
   return status;
 }
@@ -74,7 +87,7 @@ export function computeDesign(cfg) {
   const say = (step, text, kind = 'info') => log.push({ step, text, kind });
 
   for (const [key, st] of Object.entries(fields)) {
-    if (st.state === 'eto') eto.push({ step: FIELD_STEP[key], field: key, text: `${fieldLabel(key, cfg)}: ${st.msg}` });
+    if (st.state === 'eto') eto.push({ step: stepOf(key), field: key, text: `${fieldLabel(key, cfg)}: ${st.msg}` });
   }
 
   const c = { ...RENDER_DEFAULTS };
@@ -185,47 +198,55 @@ export function computeDesign(cfg) {
     ? `Slenderness H/D = ${lambda.toFixed(1)}: ${guyLevels.length * 3} guy wires (Ø ${wireDia} mm) at ${guyLevels.join(', ')} m${tubeLevels.length ? `, plus ${tubeLevels.length} lateral steel tubes to the plant` : ''}.`
     : `Slenderness H/D = ${lambda.toFixed(1)}: self-supporting.`);
 
-  // ── E · Details ──
-  const ladderOn = c.ladderType !== 'None';
-  // The ladder stops at the roof edge, or at step-off height above a top platform.
-  const ladderTop = c.platformType === 'Top Platform' ? H - 1.5 + 1.1 : H;
-  const ladder = ladderOn
-    ? {
-        type: c.ladderType,
-        top: ladderTop,
-        angle: Number(c.ladderAngle),
-        length: ladderTop - 0.3,
-        steps: Math.min(450, Math.floor((ladderTop - 0.3) * 3)),
-        flanges: Math.min(150, Math.ceil(ladderTop - 0.3)),
-        cage: c.ladderType === 'With Back Support at Top'
-          ? [Math.max(2.5, ladderTop - 6), ladderTop]
-          : c.ladderType === 'With Back Support in all Length' ? [2.5, ladderTop] : null,
-        harness: c.ladderType === 'With Safety Harness',
-      }
-    : null;
-  const platOn = c.platformType !== 'None';
-  const platElev = c.platformType === 'Top Platform' ? H - 1.5
-    : c.platformType === 'Measuring Platform' ? Math.round(H * 0.6)
-    : Math.max(4, Math.round(H * 0.3));
-  const platform = platOn
-    ? {
-        type: c.platformType,
-        elev: platElev,
-        arc: Number(c.platformArc),
-        width: Number(c.platformWidth),
-        angle: ladderOn ? Number(c.ladderAngle) : 0,
-        area: (Number(c.platformArc) / 360) * Math.PI * ((Ro + Number(c.platformWidth)) ** 2 - Ro ** 2),
-      }
-    : null;
-  if (ladder) say('E', `${ladder.steps} ladder steps, ${ladder.flanges} connecting flanges${ladder.cage ? `, back support over ${(ladder.cage[1] - ladder.cage[0]).toFixed(0)} m` : ''}${ladder.harness ? ', safety line' : ''}.`);
-  if (platform) say('E', `${platform.type} at +${platform.elev.toFixed(1)} m, ${platform.arc}°, ${platform.area.toFixed(1)} m² chequer plate.`);
+  // ── E · Details: ladders and platforms ──
+  const elevOf = (type) => (type === 'Top Platform' ? H - 1.5
+    : type === 'Measuring Platform' ? Math.round(H * 0.6)
+    : Math.max(4, Math.round(H * 0.3)));
+  const covers = (pl, angle) => {
+    if (pl.arc >= 360) return true;
+    const d = Math.abs((((angle - pl.angle) % 360) + 540) % 360 - 180);
+    return d <= pl.arc / 2 + 1e-6;
+  };
+  const platforms = (c.platforms || []).map((pl) => {
+    const arc = Number(pl.arc);
+    const width = Number(pl.width);
+    return {
+      type: pl.type, angle: Number(pl.angle), arc, width, elev: elevOf(pl.type),
+      area: (arc / 360) * Math.PI * ((Ro + width) ** 2 - Ro ** 2),
+    };
+  });
+  const topPlatform = platforms.find((pl) => pl.type === 'Top Platform');
+  const ladders = (c.ladders || []).map((l) => {
+    const angle = Number(l.angle);
+    // A ladder stops at the roof edge, or at step-off height above a top platform it reaches.
+    const top = topPlatform && covers(topPlatform, angle) ? H - 1.5 + 1.1 : H;
+    const length = top - 0.3;
+    return {
+      type: l.type, angle, top, length,
+      steps: Math.min(450, Math.floor(length * 3)),
+      flanges: Math.min(150, Math.ceil(length)),
+      cage: l.type === 'With Back Support at Top' ? [Math.max(2.5, top - 6), top]
+        : l.type === 'With Back Support in all Length' ? [2.5, top] : null,
+      harness: l.type === 'With Safety Harness',
+    };
+  });
+  ladders.forEach((l, i) => say('E', `Ladder ${i + 1} at ${l.angle}°: ${l.steps} steps, ${l.flanges} connecting flanges${l.cage ? `, back support over ${(l.cage[1] - l.cage[0]).toFixed(0)} m` : ''}${l.harness ? ', safety line' : ''}.`));
+  platforms.forEach((pl) => say('E', `${pl.type} at +${pl.elev.toFixed(1)} m, ${pl.arc}° centred at ${pl.angle}°, ${pl.area.toFixed(1)} m² chequer plate.`));
 
   // Conflicts: impossible combinations the configurator refuses.
   const doorAngle = Number(c.doorAngle);
   if (doorAngle === INLET_ANGLE) errors.push({ step: 'E', field: 'doorAngle', text: `Cleaning door at ${INLET_ANGLE}° collides with the flue gas inlet` });
-  if (ladderOn && ladder.angle === INLET_ANGLE) errors.push({ step: 'E', field: 'ladderAngle', text: `Ladder at ${INLET_ANGLE}° runs into the flue gas inlet` });
-  if (ladderOn && ladder.angle === doorAngle) errors.push({ step: 'E', field: 'ladderAngle', text: 'Ladder blocks the cleaning door: place them at different angles' });
-  if (platOn && !ladderOn && !isEmpty(cfg.ladderType)) errors.push({ step: 'E', field: 'platformType', text: 'Platform has no access: add a ladder' });
+  ladders.forEach((l, i) => {
+    const f = `ladders.${i}.angle`;
+    if (l.angle === INLET_ANGLE) errors.push({ step: 'E', field: f, text: `Ladder ${i + 1} at ${INLET_ANGLE}° runs into the flue gas inlet` });
+    else if (l.angle === doorAngle) errors.push({ step: 'E', field: f, text: `Ladder ${i + 1} blocks the cleaning door at ${doorAngle}°` });
+    else if (ladders.findIndex((o) => o.angle === l.angle) < i) errors.push({ step: 'E', field: f, text: `Ladder ${i + 1} is at the same angle as another ladder` });
+  });
+  platforms.forEach((pl, i) => {
+    if (platforms.findIndex((o) => o.type === pl.type) < i) errors.push({ step: 'E', field: `platforms.${i}.type`, text: `Platform ${i + 1}: only one ${pl.type.toLowerCase()} per chimney` });
+    else if (cfg.ladders != null && !ladders.some((l) => covers(pl, l.angle)))
+      errors.push({ step: 'E', field: `platforms.${i}.angle`, text: ladders.length ? `${pl.type} has no ladder within its ${pl.arc}° arc` : `${pl.type} has no access: add a ladder` });
+  });
   if (c.doorDiameter / 1000 > 0.45 * D) eto.push({ step: 'E', field: 'doorDiameter', text: `Door Ø ${c.doorDiameter} mm is too large for a Ø ${D.toFixed(2)} m shell (reinforced opening)` });
   if (c.inletSize / 1000 > 0.4 * D) eto.push({ step: 'E', field: 'inletSize', text: 'Inlet too large for the shell diameter' });
 
@@ -237,7 +258,8 @@ export function computeDesign(cfg) {
   const linerKg = N * Math.PI * d * H * tLiner * MATERIALS[linerMat].density;
   const insM3 = Math.PI * ((Renc + tIns) ** 2 - Renc ** 2) * H;
   const insKg = insM3 * INSULATION[insType].density;
-  const accKg = (ladder ? ladder.length * 14 + (ladder.cage ? (ladder.cage[1] - ladder.cage[0]) * 9 : 0) : 0) + (platform ? platform.area * 95 : 0);
+  const cageLen = (l) => (l.cage ? l.cage[1] - l.cage[0] : 0);
+  const accKg = ladders.reduce((s, l) => s + l.length * 14 + cageLen(l) * 9, 0) + platforms.reduce((s, pl) => s + pl.area * 95, 0);
   const weight = shellKg + linerKg + insKg + accKg;
 
   // ── Quote ──
@@ -247,7 +269,7 @@ export function computeDesign(cfg) {
     { label: `Shell, ${shellMat.toLowerCase()}`, amount: shellKg * MATERIALS[shellMat].pricePerKg },
     { label: `Liners, ${N} × ${linerMat.toLowerCase()}`, amount: linerKg * MATERIALS[linerMat].pricePerKg },
     { label: `Insulation, ${insType.toLowerCase()}`, amount: insM3 * INSULATION[insType].pricePerM3 },
-    { label: 'Ladder, platform, door, inlet', amount: (ladder ? ladder.length * 1450 + (ladder.cage ? (ladder.cage[1] - ladder.cage[0]) * 900 : 0) : 0) + (platform ? platform.area * 6800 : 0) + ({ 200: 9000, 600: 14000, 800: 18000 }[c.doorDiameter] || 14000) + 6000 + c.inletSize * 20 },
+    { label: 'Ladders, platforms, door, inlet', amount: ladders.reduce((s, l) => s + l.length * 1450 + cageLen(l) * 900, 0) + platforms.reduce((s, pl) => s + pl.area * 6800, 0) + ({ 200: 9000, 600: 14000, 800: 18000 }[c.doorDiameter] || 14000) + 6000 + c.inletSize * 20 },
     { label: 'Fans and filters', amount: (fans ? fans.count * 42000 : 0) + (filter ? filter.count * filter.price : 0) },
     { label: 'Supports and foundation', amount: guyLevels.length * 3 * 18000 + tubeLevels.length * 26000 + 40000 + 2000 * D * D },
     { label: `Engineering, ${ctoHours + etoHours} h`, amount: (ctoHours + etoHours) * K.hourRate },
@@ -271,7 +293,7 @@ export function computeDesign(cfg) {
   const values = {
     Q, Tf, T0, Tm, Tout, dT, H, N, d, v, vNat, D, Ro, Renc, tIns, tLiner, tShell,
     linerMat, shellMat, insType, lambda, vb, vTop, Hmin0, Hreq, filter, fans,
-    guyLevels, tubeLevels, wireDia, tubeDia, ladder, platform, aviation, weight,
+    guyLevels, tubeLevels, wireDia, tubeDia, ladders, platforms, aviation, weight,
     door: { dia: c.doorDiameter, height: c.doorHeight, angle: doorAngle },
     inlet: { shape: c.inletShape, size: c.inletSize, height: c.inletHeight },
     site, siteKey: c.site, medium: c.medium,
@@ -288,21 +310,19 @@ export function computeDesign(cfg) {
 
 // Flat numeric parameters for the 3D model, so they can be tweened.
 function toParams(v, medium, cfg) {
-  const lad = v.ladder;
-  const pl = v.platform;
   return {
     H: v.H, Ro: v.Ro, Renc: v.Renc, tShell: v.tShell, tIns: v.tIns,
     rLiner: v.d / 2, tLiner: v.tLiner, N: v.N,
     shellLook: MATERIALS[v.shellMat].look, linerLook: MATERIALS[v.linerMat].look, insType: v.insType,
     inletShape: v.inlet.shape, inletR: v.inlet.size / 2000, inletH: v.inlet.height,
     doorR: v.door.dia / 2000, doorH: v.door.height, doorAz: v.door.angle,
-    ladderOn: lad ? 1 : 0, ladderAz: lad ? lad.angle : 0, ladderTop: lad ? lad.top : v.H,
-    cageFrom: lad && lad.cage ? lad.cage[0] : 0, cageTo: lad && lad.cage ? lad.cage[1] : 0,
-    harness: lad && lad.harness ? 1 : 0,
-    ladderMissing: isEmpty(cfg.ladderType) ? 1 : 0,
-    platformOn: pl ? 1 : 0, platformType: pl ? pl.type : 'None', platformAz: pl ? pl.angle : 0,
-    platformElev: pl ? pl.elev : 0, platformArc: pl ? pl.arc : 180, platformW: pl ? pl.width : 1,
-    platformMissing: isEmpty(cfg.platformType) ? 1 : 0,
+    ladders: v.ladders.map((l) => ({
+      az: l.angle, top: l.top, cageFrom: l.cage ? l.cage[0] : 0, cageTo: l.cage ? l.cage[1] : 0,
+      harness: l.harness ? 1 : 0, steps: l.steps,
+    })),
+    platforms: v.platforms.map((pl) => ({ type: pl.type, az: pl.angle, elev: pl.elev, arc: pl.arc, w: pl.width })),
+    laddersMissing: cfg.ladders == null ? 1 : 0,
+    platformsMissing: cfg.platforms == null ? 1 : 0,
     fanCount: v.fans ? v.fans.count : 0, fanRpm: v.fans ? v.fans.rpm : 0,
     filterCount: v.filter ? v.filter.count : 0, filterType: v.filter ? v.filter.type : '',
     filterReduction: v.filter ? v.filter.reduction : 0,
@@ -325,8 +345,8 @@ function partInfo(v) {
     liners: { title: `${v.N} × inner liner · ${v.linerMat}`, lines: [`Ø ${m2(v.d)} · wall ${mm(v.tLiner)}`, `Gas velocity ${v.v.toFixed(1)} m/s`, `${v.Tf} K in → ${v.Tout.toFixed(0)} K out`], step: 'A' },
     inlet: { title: `Flue gas inlet · ${v.inlet.shape}`, lines: [`${v.inlet.shape === 'Square' ? 'w' : 'Ø'} ${v.inlet.size} mm at h = ${v.inlet.height} m`, `Faces the plant at ${INLET_ANGLE}°`, 'Locking plate, 2 hinges'], step: 'E' },
     door: { title: 'Cleaning door', lines: [`Manhole cover Ø ${v.door.dia} mm`, `Centre at R = ${v.door.height} m, ${v.door.angle}°`], step: 'E' },
-    ladder: v.ladder ? { title: `Safety ladder · ${v.ladder.type}`, lines: [`${v.ladder.steps} steps · ${v.ladder.flanges} connecting flanges`, `Placed at ${v.ladder.angle}°, ${v.ladder.length.toFixed(1)} m`, v.ladder.cage ? `Back support ${(v.ladder.cage[1] - v.ladder.cage[0]).toFixed(1)} m` : v.ladder.harness ? `Safety line ${v.ladder.length.toFixed(1)} m` : 'No back support'], step: 'E' } : null,
-    platform: v.platform ? { title: v.platform.type, lines: [`+${v.platform.elev.toFixed(1)} m · ${v.platform.arc}° · width ${v.platform.width} m`, `Chequer plate ${v.platform.area.toFixed(1)} m²`, 'Railing 1.5 m'], step: 'E' } : null,
+    ladder: v.ladders.length ? { title: `${v.ladders.length} × safety ladder`, lines: v.ladders.map((l) => `${l.angle}° · ${l.type.replace('With ', '')} · ${l.steps} steps`), step: 'E' } : null,
+    platform: v.platforms.length ? { title: `${v.platforms.length} × platform`, lines: v.platforms.map((pl) => `${pl.type} +${pl.elev.toFixed(1)} m · ${pl.arc}° @ ${pl.angle}° · ${pl.width} m`), step: 'E' } : null,
     fans: v.fans ? { title: `${v.fans.count} × auxiliary fan`, lines: [`Blower size ${v.fans.size} · ${v.fans.rpm} rpm`, `Forced draft ${v.v.toFixed(1)} m/s (natural ${v.vNat.toFixed(1)})`], step: 'B' } : null,
     filters: v.filter ? { title: `${v.filter.count} × filter ${v.filter.type}`, lines: [v.filter.label, `Lowers emission height by ${Math.round(v.filter.reduction * 100)} %`], step: 'C' } : null,
     supports: v.guyLevels.length ? { title: 'Structural support', lines: [`${v.guyLevels.length * 3} guy wires Ø ${v.wireDia} mm`, `Collars at ${v.guyLevels.join(', ')} m`, v.tubeLevels.length ? `${v.tubeLevels.length} lateral tubes Ø ${v.tubeDia} mm` : `H/D = ${v.lambda.toFixed(1)}`], step: 'D' } : null,

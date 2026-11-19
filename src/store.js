@@ -1,7 +1,7 @@
 import { seedOrders, newOrderConfig } from './data/seed.js';
 import { STAGES } from './config/process.js';
 
-const KEY = 'lunderskov-order-desk.v1';
+const KEY = 'lunderskov-order-desk.v2';
 let orders = load();
 const listeners = new Set();
 

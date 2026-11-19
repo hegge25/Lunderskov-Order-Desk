@@ -12,8 +12,8 @@ const EXTRA_PARTS = {
   person: { title: 'Scale reference', lines: ['Person, 1.8 m'] },
   ghost: { title: 'Missing from the specification', lines: ['The customer has not specified this yet.', 'Release to design is blocked until they do.'] },
 };
-const DISCRETE = new Set(['N', 'ladderOn', 'platformOn', 'harness', 'aviation', 'fanCount', 'filterCount', 'ladderMissing', 'platformMissing', 'steam', 'fanRpm']);
-const ANGLES = new Set(['ladderAz', 'doorAz', 'platformAz']);
+const DISCRETE = new Set(['N', 'harness', 'steps', 'aviation', 'fanCount', 'filterCount', 'laddersMissing', 'platformsMissing', 'steam', 'fanRpm']);
+const ANGLES = new Set(['az', 'doorAz']);
 const LINER_LOOK = { stainless: 'linerStainless', painted: 'linerCarbon', fiberglass: 'linerFiberglass' };
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
@@ -22,7 +22,10 @@ function lerpParams(a, b, t) {
   for (const k of Object.keys(b)) {
     const x = a[k];
     const y = b[k];
-    if (typeof x === 'number' && typeof y === 'number' && !DISCRETE.has(k)) {
+    if (Array.isArray(x) && Array.isArray(y) && x.length === y.length && typeof y[0] === 'object') {
+      // ladders, platforms: tween item by item while the count stays the same
+      out[k] = y.map((item, i) => lerpParams(x[i], item, t));
+    } else if (typeof x === 'number' && typeof y === 'number' && !DISCRETE.has(k)) {
       if (ANGLES.has(k)) {
         let d = ((y - x + 540) % 360) - 180;
         out[k] = x + d * t;
@@ -114,6 +117,7 @@ export class ChimneyViewer {
         this.applyHighlight();
         opts.onHover?.(part);
       },
+      onClick: (target, part) => opts.onCallout?.(target, part),
     });
     this.tip = document.createElement('div');
     this.tip.className = 'tip';

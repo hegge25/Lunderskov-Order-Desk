@@ -17,8 +17,8 @@ npm run build    # static site in dist/
 - **Orders board**: KPIs and every order with its type (CTO/ETO), stage, delivery date and status.
 - **Order page**:
   - **Progress strip**: stage dates, a to-scale bar of every process step, today marker, and a TO-BE / AS-IS toggle.
-  - **Configuration** (left): PVM customer-view fields, checked live. Values outside an interval make the order ETO. Missing fields block "Release to design". Impossible combinations show as conflicts.
-  - **3D chimney** (middle): parametric three.js model. It has a cutaway (insulation, liners glowing by flue gas temperature, rising gas), X-ray, dimension lines, a smoke plume, a wind profile, and context (the plant, a person for scale). There are four camera presets. Hovering or clicking a part links it to the side panel, changed parts flash, and ghost parts mark what the customer has not specified yet.
+  - **Configuration** (left): PVM customer-view fields, checked live. Ladders and platforms are lists (up to 3 each, beyond the PVM's [0;1]), with their own conflict rules: no two ladders at the same angle, every platform needs a ladder within its arc, and only one platform of each type. Values outside an interval make the order ETO. Missing fields block "Release to design". Impossible combinations show as conflicts.
+  - **3D chimney** (middle): parametric three.js model. It has a cutaway (insulation, liners glowing by flue gas temperature, rising gas), X-ray, dimension lines, a smoke plume, a wind profile, and context (the plant, a person for scale). There are four camera presets. Feature callouts sit beside the chimney with leader lines. Clicking one scrolls the form to that feature (e.g. a missing ladder). Hovering or clicking a part links it to the side panel, changed parts flash, and ghost parts mark what the customer has not specified yet.
   - **Derived** (right): the result of each designer step (A–E), the quote, and the rule log explaining each decision.
 
 Shortcuts on the order page: `C` cutaway, `X` x-ray, `D` dimensions, `S` smoke, `W` wind, `K` context, `1–4` camera presets.
