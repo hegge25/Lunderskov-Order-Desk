@@ -1,7 +1,7 @@
 import { seedOrders, newOrderConfig } from './data/seed.js';
 import { STAGES } from './config/process.js';
 
-const KEY = 'lunderskov-order-desk.v3';
+const KEY = 'lunderskov-order-desk.v4';
 let orders = load();
 const listeners = new Set();
 
@@ -32,12 +32,15 @@ export const store = {
     o.stage = i < 0 || i >= STAGES.length - 1 ? 'done' : STAGES[i + 1].key;
     save();
   },
-  create() {
+  // A new enquiry: entered by a salesperson (scenario 1), or sent from the web configurator
+  // (scenario 2), which hands over a complete configuration.
+  create(from = {}) {
     const n = Math.max(...orders.map((o) => Number(o.id.split('-')[2]))) + 1;
     const o = {
       id: `LC-2026-${String(n).padStart(4, '0')}`,
       customer: 'New customer', project: 'New enquiry', contact: 'Mette Lund',
-      created: new Date().toISOString(), stage: 'enquiry', config: newOrderConfig(),
+      created: new Date().toISOString(), stage: 'enquiry', channel: 'sales', config: newOrderConfig(),
+      ...from,
     };
     orders.unshift(o);
     save();

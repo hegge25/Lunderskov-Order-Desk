@@ -2,6 +2,7 @@
 // Ladder and platform are optional parts, added or removed up to the PVM cardinality.
 import { FIELDS, FIELD_GROUPS, ITEM_FIELDS, fieldDef, parseItemKey, newItem } from '../config/pvm.js';
 import { SITES } from '../config/rules.js';
+import { LINKS, LINK_OF } from '../config/links.js';
 import { fieldLabel, isActive } from '../engine/design.js';
 import { h, esc } from '../format.js';
 
@@ -37,7 +38,17 @@ function inputHtml(key, f, v) {
   </div>`;
 }
 
-function fieldHtml(key, f, v, label) {
+// Which process steps use this attribute: AS-IS step numbers and TO-BE steps (CTO or ETO, by CSS).
+export function usesHtml(link) {
+  const l = LINKS[link];
+  if (!l) return '';
+  return h`<div class="uses" data-link="${link}" title="Process steps that use this attribute. Hover to see them on the strip.">
+    <span class="u-asis"><em>AS-IS</em>${l.asis.filter((n) => typeof n === 'number').map((n) => `<i>${n}</i>`)}</span>
+    <span class="u-tobe"><em>TO-BE</em><i class="q">Q</i>${l.CTO.map((n) => `<i class="cto">${n}</i>`)}${l.ETO.map((n) => `<i class="eto">${n}</i>`)}</span>
+  </div>`;
+}
+
+function fieldHtml(key, f, v, label, link) {
   return h`
     <div class="field ${f.type}" data-field="${key}">
       <div class="f-top">
@@ -46,17 +57,20 @@ function fieldHtml(key, f, v, label) {
       </div>
       ${inputHtml(key, f, v)}
       <div class="f-msg"></div>
+      ${link ? usesHtml(link) : ''}
     </div>`;
 }
 
-function listHtml(list, cfg) {
+const WEB_GROUP = { flue: 'Flue gas data', site: 'Location', inlet: 'Flue gas inlet', door: 'Cleaning door', ladder: 'Accessories: safety ladder', platform: 'Accessories: platform' };
+
+function listHtml(list, cfg, opts = {}) {
   const f = FIELDS[list];
   const items = cfg[list];
   if (items == null) {
     return h`
       <div class="field list-missing" data-field="${list}">
         <div class="f-top"><label>${f.label}</label><span class="f-state"></span></div>
-        <p class="lm-text">The customer has not said whether they want a ${f.noun}.</p>
+        <p class="lm-text">${opts.web ? `Do you need a ${f.noun}?` : `The customer has not said whether they want a ${f.noun}.`}</p>
         <div class="lm-actions">
           <button type="button" class="btn sm" data-none="${list}">No ${f.noun}</button>
           <button type="button" class="btn sm primary" data-add="${list}">Add ${f.noun}</button>
@@ -78,19 +92,29 @@ function listHtml(list, cfg) {
     <p class="list-note">${esc(f.pvm)}</p>`;
 }
 
-export function mountConfig(el, order, handlers) {
+export function mountConfig(el, order, handlers, opts = {}) {
   const cfg = order.config;
+  // A group whose fields share one link shows it once, under its header.
+  const groupLink = (g) => {
+    const ls = new Set(g.fields.map((k) => LINK_OF[k]));
+    return ls.size === 1 && g.fields.length > 1 || FIELDS[g.fields[0]].type === 'list' ? [...ls][0] : null;
+  };
   el.innerHTML = h`
-    <div class="spec-card" data-spec></div>
-    ${FIELD_GROUPS.map((g) => h`
-      <section class="fgroup" data-group="${g.id}">
-        <header><span>${g.label}</span><span class="g-state"></span></header>
+    ${opts.web ? '' : '<div class="spec-card" data-spec></div>'}
+    ${FIELD_GROUPS.map((g) => {
+      const gl = groupLink(g);
+      return h`
+      <section class="fgroup" data-group="${g.id}" ${gl ? `data-glink="${gl}"` : ''}>
+        <header><span>${opts.web ? (WEB_GROUP[g.id] || g.label) : g.label}</span><span class="g-state"></span></header>
+        ${gl && !opts.web ? usesHtml(gl) : ''}
         ${g.fields.map((k) => (FIELDS[k].type === 'list'
-          ? `<div class="list" data-list="${k}">${listHtml(k, cfg)}</div>`
-          : fieldHtml(k, FIELDS[k], cfg[k], fieldLabel(k, cfg))))}
-      </section>`)}
-    <p class="pvm-note">Fields and intervals are the customer view of the PVM (Appendix 1). A value outside an interval turns the order into ETO.</p>`;
+          ? `<div class="list" data-list="${k}">${listHtml(k, cfg, opts)}</div>`
+          : fieldHtml(k, FIELDS[k], cfg[k], fieldLabel(k, cfg), gl || opts.web ? null : LINK_OF[k])))}
+      </section>`;
+    })}
+    ${opts.web ? '' : '<p class="pvm-note">Fields and intervals are the customer view of the PVM (Appendix 1). A value outside an interval turns the order into ETO. The chips under each field are the PVM–process link: the AS-IS steps (Appendix 3) and TO-BE steps that use the attribute. In the TO-BE process all of them are set in the quotation (Q).</p>'}`;
 
+  el._opts = opts;
   const parse = (key, raw) => {
     const f = fieldDef(key);
     if (raw === '' || raw == null) return null;
@@ -98,7 +122,7 @@ export function mountConfig(el, order, handlers) {
     return raw;
   };
   const setList = (list, arr) => {
-    el.querySelector(`[data-list="${list}"]`).innerHTML = listHtml(list, { ...cfg, [list]: arr });
+    el.querySelector(`[data-list="${list}"]`).innerHTML = listHtml(list, { ...cfg, [list]: arr }, opts);
     handlers.onChange(list, arr);
   };
   const commit = (key, val) => {
@@ -141,11 +165,20 @@ export function mountConfig(el, order, handlers) {
     seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
     commit(seg.dataset.k, parse(seg.dataset.k, b.dataset.v));
   });
+  let hoverLink = null;
   el.addEventListener('mouseover', (e) => {
     const g = e.target.closest('[data-group]');
     handlers.onHoverGroup?.(g ? g.dataset.group : null);
+    const f = e.target.closest('[data-field]');
+    const key = f ? f.dataset.field.split('.')[0] : null;
+    const link = (key && LINK_OF[key]) || g?.dataset.glink || null;
+    if (link !== hoverLink) { hoverLink = link; handlers.onHoverLink?.(link); }
   });
-  el.addEventListener('mouseleave', () => handlers.onHoverGroup?.(null));
+  el.addEventListener('mouseleave', () => {
+    handlers.onHoverGroup?.(null);
+    hoverLink = null;
+    handlers.onHoverLink?.(null);
+  });
 }
 
 // Scroll to the form section behind a callout (a group, or one item of a list) and flash it.
@@ -164,6 +197,8 @@ export function focusTarget(el, target) {
 
 export function updateConfig(el, order, design) {
   const cfg = order.config;
+  const web = !!el._opts?.web;
+  el.dataset.cls = design.cls;
   const errs = Object.fromEntries(design.errors.filter((e) => e.field).map((e) => [e.field, e.text]));
   const etoDerived = Object.fromEntries(design.eto.filter((e) => e.field && design.fields[e.field]?.state === 'ok').map((e) => [e.field, e.text]));
   for (const node of el.querySelectorAll('[data-field]')) {
@@ -173,14 +208,14 @@ export function updateConfig(el, order, design) {
     if (!f || !st) continue;
     let state = st.state;
     let msg = f.pvm;
-    if (state === 'missing') msg = 'Missing: ask the customer';
-    if (state === 'eto') msg = `${st.msg} → ETO`;
-    if (etoDerived[key]) { state = 'eto'; msg = `${etoDerived[key]} → ETO`; }
+    if (state === 'missing') msg = web ? 'Required for a quotation' : 'Missing: ask the customer';
+    if (state === 'eto') msg = web ? `${st.msg}: outside our standard range` : `${st.msg} → ETO`;
+    if (etoDerived[key]) { state = 'eto'; msg = web ? `${etoDerived[key]}: outside our standard range` : `${etoDerived[key]} → ETO`; }
     if (errs[key]) { state = 'error'; msg = errs[key]; }
     node.dataset.state = state;
     node.hidden = !isActive(key, cfg);
     node.querySelector('.f-msg').textContent = msg;
-    node.querySelector('.f-state').textContent = { ok: '', missing: 'Missing', eto: 'ETO', error: 'Conflict', inactive: '' }[state];
+    node.querySelector('.f-state').textContent = { ok: '', missing: web ? 'Required' : 'Missing', eto: web ? 'Special' : 'ETO', error: 'Conflict', inactive: '' }[state];
     if (typeof f.label === 'function') node.querySelector('label').firstChild.textContent = fieldLabel(key, cfg);
     const hint = node.querySelector('[data-hint]');
     if (hint && cfg[key] != null) hint.textContent = f.hint(cfg[key]);
@@ -195,13 +230,14 @@ export function updateConfig(el, order, design) {
   const active = Object.values(design.fields).filter((f) => f.state !== 'inactive');
   const done = active.filter((f) => f.state !== 'missing').length;
   const spec = el.querySelector('[data-spec]');
+  if (!spec) return;
   spec.className = `spec-card ${design.releasable ? 'ready' : 'blocked'}`;
   spec.innerHTML = h`
     <div class="spec-top"><b>Specification</b><span>${done} / ${active.length}</span></div>
     <div class="bar"><i style="width:${(done / active.length) * 100}%"></i></div>
     <p>${design.releasable
-      ? 'Complete. Ready to release to design.'
+      ? 'Complete: every customer-view attribute the design steps use is known (R3).'
       : !design.complete
-        ? `Release blocked: ${design.missing.map((k) => fieldLabel(k, cfg).toLowerCase()).join(', ')} not specified.`
-        : `Release blocked: ${design.errors.length} conflict${design.errors.length > 1 ? 's' : ''} to resolve.`}</p>`;
+        ? `Quotation blocked (R3): ${design.missing.map((k) => fieldLabel(k, cfg).toLowerCase()).join(', ')} not specified.`
+        : `Quotation blocked: ${design.errors.length} conflict${design.errors.length > 1 ? 's' : ''} to resolve.`}</p>`;
 }

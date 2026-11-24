@@ -1,23 +1,24 @@
 // Guided tour: a spotlight on one part of the screen at a time, with a card explaining it.
 // Runs on the first visit; "Tour" in the top bar replays it, "?" on the strip opens the strip explainer.
 
-const SEEN = 'lod.tourSeen.v1';
-const DEMO = 'LC-2026-0412'; // the order with missing ladders and platforms
+const SEEN = 'lod.tourSeen.v2';
+const DEMO = 'LC-2026-0412'; // the order with no ladder or platform specified yet
 
 const txt = (sel) => document.querySelector(sel)?.textContent.trim() || '';
 
 // The progress strip, number by number. Text is filled in from what is on screen.
 const STRIP_MARKS = [
-  { sel: '.strip-sum [data-variant]', text: () => '<b>TO-BE / AS-IS</b> switches between the proposed process and today\'s. Same order, same enquiry date: only the process changes.' },
+  { sel: '.strip-sum [data-variant]', text: () => '<b>TO-BE / AS-IS</b> switches between the report\'s future process and today\'s. Same order, same enquiry date: only the process changes.' },
   { sel: '.sum-main b', text: () => `<b>${txt('.sum-main b')}</b> is the planned delivery: when the chimney is installed if the remaining steps run to plan. A late step pushes it back.` },
-  { sel: '.sum-sub span:first-child', text: () => `<b>${txt('.sum-sub span:first-child')}</b> from the enquiry to the installed chimney, including about 8 days waiting for the customer's decision. Weekends are not counted.` },
+  { sel: '.sum-sub span:first-child', text: () => `<b>${txt('.sum-sub span:first-child')}</b> from the enquiry to the installed chimney, including about 8 days waiting for the customer's decision (our assumption). Weekends are not counted.` },
   { sel: '.delta', text: () => `<b>${txt('.delta')}</b>: the same order run through the other process.` },
   { sel: '.stage.active .st-when, .stage.late .st-when', at: 'right', text: () => 'Each stage shows when it should be finished (<b>by …</b>), or <b>Done</b>.' },
   { sel: '.stage.active .st-dur, .stage.late .st-dur', at: 'right', text: () => 'Its length in working days. <b>late</b> means the current step overran: it is stretched to today and everything after it moves.' },
-  { sel: '.g-track', at: 'below', text: () => 'Every process step, to scale. Grey is done, orange in progress, red late. <b>Hatched</b> steps are waiting on others: the customer or the authorities. Hover a segment to see what it is.' },
+  { sel: '.st-req', at: 'right', text: () => '<b>R1</b> and <b>R2</b> check the plan against the case\'s targets: a quotation within 1–2 days, design within 2 days for CTO and 2 weeks for ETO. Hover for the numbers.' },
+  { sel: '.g-track', at: 'below', text: () => 'Every step to scale: TO-BE from the report\'s swimlanes, AS-IS from the case with the Appendix 3 step numbers. Grey is done, orange in progress, red late, <b>blue</b> the configurator. <b>Hatched</b> steps wait on others. ETO orders get a second lane: E4 runs in parallel with E2.' },
   { sel: '.g-today em', at: 'right', text: () => '<b>Today.</b>' },
   { sel: '.g-other em', at: 'left', text: () => `<b>${txt('.g-other em')}</b>: when the other process would deliver this order.` },
-  { sel: '.strip-act .btn', text: () => 'Moves the order to its next stage. <b>Release to design</b> stays blocked while information is missing or conflicting.' },
+  { sel: '.strip-act .btn', text: () => 'Moves the order on. <b>Send binding quotation</b> stays blocked while information is missing or conflicting (R3).' },
 ];
 
 const STRIP_STEP = {
@@ -33,38 +34,38 @@ const MAIN = [
   {
     route: '#/orders',
     title: 'Lunderskov Order Desk',
-    body: `<p>A prototype of how Lunderskov Chimneys could run an order with product configuration, from enquiry to installed chimney.</p>
-      <p>This takes about two minutes. All numbers, rules and orders are dummy data. Afterwards, change anything you like: <b>Reset demo data</b> puts it back.</p>`,
+    body: `<p>A prototype of the TO-BE process in our report: one configurator built on the PVM, used by customers on the web (quotation scenario 2) and by sales and design inside the company.</p>
+      <p>This takes about two minutes. Numbers, rules and orders are dummy data; the fields, options and process steps follow the case and the report. Afterwards, change anything you like: <b>Reset demo data</b> puts it back.</p>`,
   },
   {
     route: '#/orders',
     target: '.kpis',
     place: 'bottom',
-    title: 'The order board',
-    body: '<p>Every order runs through the configurator. The board shows how many are <b>configure-to-order (CTO)</b>, inside the product range, and the lead time compared with today\'s process.</p>',
+    title: 'Measured against the requirements',
+    body: '<p>The board tracks the requirements from the report: <b>R1</b> quotation within 1–2 days, <b>R2</b> design within 2 days for CTO and 2 weeks for ETO, <b>R3</b> a complete specification before the quotation, and <b>R7</b> orders configured online. The AS-IS figures are the case\'s.</p>',
   },
   {
     route: '#/orders',
     target: `tr[data-id="${DEMO}"]`,
     place: 'bottom',
     title: 'One order',
-    body: '<p>The configurator sets the type automatically: <b>CTO</b> if every requirement is inside the product range, <b>ETO</b> (engineer-to-order) if not. This order is late because the specification is incomplete. Let\'s open it.</p>',
+    body: '<p>This enquiry came in by phone. The configurator sets the type: <b>CTO</b> if every attribute is inside the PVM intervals, <b>ETO</b> if not. It is late because the binding quotation is blocked: the specification is incomplete. Let\'s open it.</p>',
   },
   {
     route: `#/order/${DEMO}`,
     target: '[data-config]',
     place: 'right',
-    title: 'The specification form',
-    body: `<p>The fields are the <b>customer view of the product variant master</b>. Each slider's green band is the interval the product range covers.</p>
-      <p><b>Try it:</b> drag <i>Flow rate</i> past 50. The order turns ETO and the reason appears on the right.</p>`,
+    title: 'The PVM, linked to the process',
+    body: `<p>The fields are the <b>customer view of the PVM</b>; each slider's green band is the interval. The chips under each field are the <b>PVM–process link</b>: the AS-IS steps (Appendix 3) and TO-BE steps that use the attribute.</p>
+      <p><b>Try it:</b> hover <i>Flow rate</i> and watch the strip. Then switch the strip to <b>AS-IS</b> and hover again: 8 steps instead of 1.</p>`,
   },
   {
     route: `#/order/${DEMO}`,
     target: ['[data-field="ladders"]', '[data-group="ladder"]'],
     scroll: true,
     place: 'right',
-    title: 'Missing information',
-    body: `<p>The customer hasn't said whether they want a ladder or a platform, which in the case study designers only find out late. The model shows them as orange ghosts, and <b>Release to design</b> is blocked.</p>
+    title: 'Complete before the quotation (R3)',
+    body: `<p>In the case, designer E "most often" misses the ladder and platform and gathers them in step 16, after the main dimensioning. Here they are required before the quotation goes out: the model shows them as orange ghosts, and <b>Send binding quotation</b> is blocked.</p>
       <p><b>Try it:</b> click <i>Add ladder</i>.</p>`,
   },
   {
@@ -72,26 +73,34 @@ const MAIN = [
     target: '[data-viewer]',
     place: 'left',
     title: 'The chimney, built from the configuration',
-    body: `<p>Height, liners, insulation, fans, filters and guy wires all follow from the rules, and the model rebuilds when anything changes.</p>
+    body: `<p>Height, liners, insulation, fans, filters and wire supports all follow from the rules, and the model rebuilds when anything changes.</p>
       <p><b>Cutaway</b> (C) shows the insulation and the flue gas cooling on its way up. Also try <b>Wind</b> (W) and the camera views (1–4). Hover a part for its specs; click a label to jump to its field.</p>`,
   },
   {
     route: `#/order/${DEMO}`,
     target: '[data-derived]',
     place: 'left',
-    title: 'What the configurator worked out',
-    body: `<p>The configurator does the work of the five designers in the case: <b>A</b> capacity, <b>B</b> thermal and material, <b>C</b> emission, <b>D</b> structure, <b>E</b> details. <b>Auto</b> means generated; <b>Designer</b> means an engineer is needed.</p>
-      <p>Below: the price estimate and a <b>rule log</b> explaining every decision.</p>`,
+    title: 'The TO-BE design process',
+    body: `<p>A CTO order is designed by the order configurator in one pass, <b>C2–C5</b>, in the re-sequenced order of the process DSM: requirements and emission, then the material, then H, d, N and the heat loss solved together. C5 generates the <b>part list</b> and <b>drawing</b>; a designer checks it (C6).</p>
+      <p>An ETO order shows <b>E2–E8</b> with the people who own them. The rule log below explains every decision.</p>`,
   },
   { ...STRIP_STEP, route: `#/order/${DEMO}` },
+  {
+    route: '#/web',
+    target: '.web-side',
+    place: 'left',
+    title: 'Scenario 2: the customer configures online',
+    body: `<p>The same PVM and rules, for customers. They get a <b>budget price</b> and a <b>standard drawing</b> at once (R7). <i>Request binding quotation</i> drops the enquiry into the Order Desk, where the salesperson verifies the local requirements, wind profile and installation before the binding quotation.</p>`,
+  },
   {
     route: `#/order/${DEMO}`,
     title: 'Over to you',
     body: `<ul>
-      <li>Set <i>Installation site</i> to <b>Other</b>: the order becomes ETO.</li>
-      <li>Put the <i>cleaning door</i> at <b>90°</b>: it collides with the inlet.</li>
-      <li>Switch the strip to <b>AS-IS</b> and watch the delivery date move.</li>
-      <li>Start a <b>New enquiry</b> from the order board.</li>
+      <li>Set <i>Location</i> to <b>Other</b>: the order becomes ETO and the right column switches to E2–E8.</li>
+      <li>Put the <i>cleaning door</i> at <b>90°</b>: it collides with the gas inlet.</li>
+      <li>Switch the strip to <b>AS-IS</b> and hover a field.</li>
+      <li>Open the <b>drawing</b> in C5.</li>
+      <li>Request a quotation in the <b>web configurator</b> and find it on the board.</li>
     </ul>
     <p><b>Tour</b> in the top bar replays this, and <b>?</b> on the strip explains its numbers.</p>`,
   },

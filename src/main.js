@@ -1,6 +1,7 @@
 import './styles.css';
 import { renderOrders } from './views/orders.js';
 import { renderOrder } from './views/order.js';
+import { renderWeb } from './views/web.js';
 import { maybeStartTour, startTour } from './views/tour.js';
 
 const app = document.getElementById('app');
@@ -10,9 +11,12 @@ function route() {
   cleanup();
   const hash = location.hash || '#/orders';
   const m = hash.match(/^#\/order\/(.+)$/);
-  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', !m && a.getAttribute('href') === '#/orders'));
-  app.className = m ? 'app-order' : 'app-list';
-  cleanup = m ? renderOrder(app, decodeURIComponent(m[1])) : renderOrders(app);
+  const web = hash.startsWith('#/web');
+  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', !m && a.getAttribute('href') === (web ? '#/web' : '#/orders')));
+  app.className = m || web ? 'app-order' : 'app-list';
+  document.body.classList.toggle('is-web', web);
+  if (web) cleanup = renderWeb(app);
+  else cleanup = m ? renderOrder(app, decodeURIComponent(m[1])) : renderOrders(app);
 }
 window.addEventListener('hashchange', route);
 route();

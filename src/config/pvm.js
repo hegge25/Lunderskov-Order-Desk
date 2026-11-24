@@ -36,8 +36,8 @@ export const FIELDS = {
     pvm: 'Exhaust medium · Emission components',
   },
   site: {
-    label: 'Installation site', type: 'select', options: null /* filled from SITES */, eto: ['OTHER'],
-    pvm: 'Local Requirements & Conditions',
+    label: 'Location', type: 'select', options: null /* filled from SITES */, eto: ['OTHER'],
+    pvm: 'Local Requirements & Conditions · emission level, min/max height, wind profile',
   },
   inletShape: {
     label: 'Inlet shape', type: 'segmented', options: ['Round', 'Square'],
@@ -78,7 +78,7 @@ export const FIELDS = {
 
 export const FIELD_GROUPS = [
   { id: 'flue', label: 'Flue gas', fields: ['flowRate', 'flueTemp', 'medium'] },
-  { id: 'site', label: 'Site', fields: ['site'] },
+  { id: 'site', label: 'Location', fields: ['site'] },
   { id: 'inlet', label: 'Flue gas inlet', fields: ['inletShape', 'inletSize', 'inletHeight'] },
   { id: 'door', label: 'Cleaning door', fields: ['doorDiameter', 'doorHeight', 'doorAngle'] },
   { id: 'ladder', label: 'Safety ladder', fields: ['ladders'] },

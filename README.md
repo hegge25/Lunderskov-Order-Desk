@@ -1,8 +1,11 @@
 # Lunderskov Order Desk
 
-A prototype internal tool for Lunderskov Chimneys (DTU 41637, Assignment 2). It shows how an order could be run by product configuration: the customer view of the PVM is the order form, a rules engine plays Designers A–E, and the chimney is drawn in 3D from the result.
+A prototype of the TO-BE process in our report for Lunderskov Chimneys (DTU 41637, Assignment 2). One configurator, built on the PVM, is used in two places:
 
-**All regulations, prices, timings and orders are dummy data.**
+- a **web configurator** for customers (quotation scenario 2), which gives a budget price and a standard drawing at once;
+- the **Order Desk**, where sales and design take an order from enquiry to installed chimney, through the CTO process (C1–C6) or the ETO process (E1–E8).
+
+**All regulations, prices, timings and orders are dummy data.** The fields, options, cardinalities and process steps follow the case and the report.
 
 ## Run
 
@@ -12,16 +15,23 @@ npm run dev      # http://localhost:5173
 npm run build    # static site in dist/
 ```
 
-## What it does
+## What it does, and where it is in the report
 
-- **Guided tour**: runs on the first visit (9 steps) and can be replayed with **Tour** in the top bar. The **?** on the progress strip explains each of its numbers.
+| Feature | Report |
+|---|---|
+| Order board KPIs: quotation lead time, design lead time, blocked orders, orders configured online | Requirements R1, R2, R3, R7 (§3.2) |
+| PVM customer view as the form; a value outside an interval makes the order ETO | PVM, Appendix 1; CTO/ETO split (§4.2) |
+| Chips under each field: the AS-IS steps (Appendix 3) and TO-BE steps that use it. Hovering lights them up on the strip | PVM–process link, ASIS and TOBE columns (§2.2, §4.2, §4.3) |
+| "Send binding quotation" is blocked while the ladder, platform or any other field is missing | R3: complete specification at the quotation |
+| Progress strip: TO-BE steps from the swimlanes (quotation scenario 2, CTO C1–C6, ETO E1–E8 with E4 parallel to E2), AS-IS steps from the case with the Appendix 3 numbers, including the three capacity re-calculations | TO-BE attachments (§4.1, §4.2); AS-IS processing times (§2.1) |
+| R1 and R2 badges on the quotation and design stages | §3.2 |
+| Right column grouped by TO-BE step: emission → material → H, d, N and heat loss as one joint task → strength → details | Process DSM (Figure 2), re-sequencing (§4.2) |
+| C5: part list and drawing with main dimensions, generated from the configuration. Part names follow the PVM part view | CTO chart C5; framework, Appendix C |
+| CTO price shown as final, ETO as an estimate | R6 |
+| Web configurator: budget price, standard drawing, "Request binding quotation" creates the enquiry in the Order Desk | Quotation scenario 2, R7 |
+| 3D chimney: cutaway, X-ray, dimensions, smoke, wind profile, callouts that jump to their field, ghost parts for missing information | — |
 
-- **Orders board**: KPIs and every order with its type (CTO/ETO), stage, delivery date and status.
-- **Order page**:
-  - **Progress strip**: stage dates, a to-scale bar of every process step, today marker, and a TO-BE / AS-IS toggle.
-  - **Configuration** (left): PVM customer-view fields, checked live. Ladder and platform follow the PVM's [0;1]: the customer can choose none, one, or not have answered yet, and a platform needs a ladder. Values outside an interval make the order ETO. Missing fields block "Release to design". Impossible combinations show as conflicts.
-  - **3D chimney** (middle): parametric three.js model. It has a cutaway (insulation, liners glowing by flue gas temperature, rising gas), X-ray, dimension lines, a smoke plume, a wind profile, and context (the plant, a person for scale). There are four camera presets. Feature callouts sit beside the chimney with leader lines. Clicking one scrolls the form to that feature (e.g. a missing ladder). Hovering or clicking a part links it to the side panel, changed parts flash, and ghost parts mark what the customer has not specified yet.
-  - **Derived** (right): the result of each designer step (A–E), the quote, and the rule log explaining each decision.
+A **guided tour** runs on the first visit and can be replayed with **Tour** in the top bar. The **?** on the progress strip explains each of its numbers.
 
 Shortcuts on the order page: `C` cutaway, `X` x-ray, `D` dimensions, `S` smoke, `W` wind, `K` context, `1–4` camera presets.
 
@@ -30,10 +40,13 @@ Shortcuts on the order page: `C` cutaway, `X` x-ray, `D` dimensions, `S` smoke, 
 | What | File |
 |---|---|
 | PVM fields and intervals | `src/config/pvm.js` |
-| Dummy regulations, sites, filters, materials | `src/config/rules.js` |
-| Process steps and durations (TO-BE is a placeholder) | `src/config/process.js` |
-| Design rules (Designers A–E), quote | `src/engine/design.js` |
+| PVM–process link (ASIS / TOBE columns) | `src/config/links.js` |
+| Process steps, durations, R1/R2 targets | `src/config/process.js` |
+| Dummy regulations, locations, filters, materials | `src/config/rules.js` |
+| Design rules, TO-BE step mapping, part list, quote | `src/engine/design.js` |
+| Drawing and part list views | `src/views/docs.js` |
+| Web configurator | `src/views/web.js` |
 | Demo orders | `src/data/seed.js` |
 | 3D model | `src/three/model.js` (geometry), `src/three/viewer.js` (scene, camera, interaction), `src/three/effects.js` (smoke, wind, gas flow) |
 
-Order changes are saved in the browser's localStorage. Use "Reset demo data" on the orders page to start over.
+TO-BE durations are our assumptions, sized to the targets. Order changes are saved in the browser's localStorage. Use "Reset demo data" on the orders page to start over.

@@ -26,47 +26,47 @@ export function seedOrders() {
   return [
     {
       id: 'LC-2026-0412', customer: 'Nordvarme A/S', project: 'Biomass boiler line 3',
-      contact: 'Mette Lund', created: ago(11), stage: 'spec',
+      contact: 'Mette Lund', created: ago(2), stage: 'quote', channel: 'sales',
       config: { ...full, flowRate: 30, flueTemp: 520, medium: 'Biomass', site: 'DK-Kolding', ladders: null, platforms: null },
     },
     {
       id: 'LC-2026-0409', customer: 'Hanse BioEnergie GmbH', project: 'Waste-to-energy stack',
-      contact: 'Jonas Kragh', created: ago(16), stage: 'design',
+      contact: 'Jonas Kragh', created: ago(16), stage: 'design', channel: 'sales',
       config: { ...full, flowRate: 50, flueTemp: 620, medium: 'Waste Incineration', site: 'DE-Munchen', ladders: [L('With Back Support in all Length', 270)], platforms: [P('Measuring Platform', 360)] },
     },
     {
       id: 'LC-2026-0405', customer: 'Fjordvarme AS', project: 'Oil peak-load boiler',
-      contact: 'Mette Lund', created: ago(20), stage: 'production',
+      contact: 'Mette Lund', created: ago(20), stage: 'production', channel: 'web',
       config: { ...full, flowRate: 15, flueTemp: 600, medium: 'Oil', site: 'NO-Bergen', ladders: [L('With Safety Harness', 180)], platforms: [P('Top Platform', 120)] },
     },
     {
       id: 'LC-2026-0414', customer: 'Øresund Kraft AB', project: 'Gas engine plant',
-      contact: 'Sara Holm', created: ago(1), stage: 'quote',
+      contact: 'Sara Holm', created: ago(0), stage: 'quote', channel: 'web',
       config: { ...full, flowRate: 12, flueTemp: 400, medium: 'Natural Gas', site: 'SE-Malmo', inletShape: 'Square', inletSize: 300, ladders: [L('Standard Ladder', 270)], platforms: [] },
     },
     {
       id: 'LC-2026-0401', customer: 'Bałtyk Ciepło Sp. z o.o.', project: 'Coal unit retrofit',
-      contact: 'Jonas Kragh', created: ago(26), stage: 'delivery',
+      contact: 'Jonas Kragh', created: ago(26), stage: 'delivery', channel: 'sales',
       config: { ...full, flowRate: 45, flueTemp: 800, medium: 'Coal', site: 'PL-Gdansk', ladders: [L('With Back Support in all Length', 270)], platforms: [P('Service Platform', 360, 1.5)] },
     },
     {
       id: 'LC-2026-0410', customer: 'Rijnmond Afvalenergie BV', project: 'Line 2 replacement',
-      contact: 'Sara Holm', created: ago(10), stage: 'design',
+      contact: 'Sara Holm', created: ago(10), stage: 'design', channel: 'web',
       config: { ...full, flowRate: 38, flueTemp: 560, medium: 'Waste Incineration', site: 'NL-Rotterdam', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform')] },
     },
     {
       id: 'LC-2026-0413', customer: 'Vejle Papirfabrik', project: 'Drying hall exhaust',
-      contact: 'Mette Lund', created: ago(4), stage: 'order',
+      contact: 'Mette Lund', created: ago(4), stage: 'order', channel: 'web',
       config: { ...full, flowRate: 22, flueTemp: 430, medium: 'Gas', site: 'DK-Aarhus', ladders: [L('Standard Ladder', 270)], platforms: [] },
     },
     {
       id: 'LC-2026-0396', customer: 'Pohjola Lämpö Oy', project: 'District heating, Oulu',
-      contact: 'Sara Holm', created: ago(45), stage: 'done',
+      contact: 'Sara Holm', created: ago(45), stage: 'done', channel: 'sales',
       config: { ...full, flowRate: 18, flueTemp: 540, medium: 'Biomass', site: 'FI-Oulu', platforms: [P('Top Platform', 90)] },
     },
     {
       id: 'LC-2026-0415', customer: 'Kystkraft ApS', project: 'Harbour boiler, special site',
-      contact: 'Jonas Kragh', created: ago(2), stage: 'quote',
+      contact: 'Jonas Kragh', created: ago(2), stage: 'quote', channel: 'web',
       config: { ...full, flowRate: 58, flueTemp: 480, medium: 'Biomass', site: 'OTHER', ladders: [L('With Back Support at Top', 180)], platforms: [P('Top Platform', 180, 2)] },
     },
   ];

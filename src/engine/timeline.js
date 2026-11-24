@@ -1,4 +1,4 @@
-import { STAGES, stepsFor } from '../config/process.js';
+import { STAGES, TARGETS, stepsFor } from '../config/process.js';
 
 const DAY = 86400000;
 const stageIndex = (key) => STAGES.findIndex((s) => s.key === key);
@@ -34,8 +34,9 @@ export function workingDaysBetween(a, b) {
 
 // Plan an order: each step gets start/end offsets in working days from the enquiry date.
 // Active steps that have overrun are stretched to today, and later steps are re-forecast.
+// A step marked `par` runs alongside the step before it (E4 next to E2).
 export function schedule(order, cls, variant = 'TO-BE', today = new Date()) {
-  const steps = stepsFor(variant, cls);
+  const steps = stepsFor(variant, cls, order.channel);
   const created = new Date(order.created);
   const now = workingDaysBetween(created, today);
   const active = stageIndex(order.stage);
@@ -43,14 +44,16 @@ export function schedule(order, cls, variant = 'TO-BE', today = new Date()) {
   let cursor = 0;
   let late = false;
   let activeSeen = false;
+  let prev = { start: 0, seen: false };
   const planned = steps.map((s, idx) => {
     const si = stageIndex(s.stage);
-    const start = cursor;
+    const start = s.par ? prev.start : cursor;
+    const seen = s.par ? prev.seen : activeSeen;
     let end = start + s.days;
     let status;
     if (delivered || si < active) status = 'done';
-    else if (si === active && !activeSeen) {
-      const lastInStage = !steps[idx + 1] || steps[idx + 1].stage !== s.stage;
+    else if (si === active && !seen) {
+      const lastInStage = !steps.slice(idx + 1).some((n) => n.stage === s.stage && !n.par);
       if (end < now && !lastInStage) status = 'done';
       else {
         status = 'active';
@@ -58,7 +61,8 @@ export function schedule(order, cls, variant = 'TO-BE', today = new Date()) {
         if (end < now) { end = now + 0.5; status = 'late'; late = true; }
       }
     } else status = 'upcoming';
-    cursor = end;
+    prev = { start, seen };
+    cursor = Math.max(cursor, end);
     return { ...s, start, end, status };
   });
   const total = cursor;
@@ -67,7 +71,7 @@ export function schedule(order, cls, variant = 'TO-BE', today = new Date()) {
     const mine = planned.filter((p) => p.stage === st.key);
     if (!mine.length) return { ...st, days: 0, start: 0, end: 0, status: 'upcoming', steps: [] };
     const start = mine[0].start;
-    const end = mine[mine.length - 1].end;
+    const end = Math.max(...mine.map((m) => m.end));
     let status = 'upcoming';
     if (delivered || i < active) status = 'done';
     else if (i === active) status = mine.some((m) => m.status === 'late') ? 'late' : 'active';
@@ -77,8 +81,15 @@ export function schedule(order, cls, variant = 'TO-BE', today = new Date()) {
     };
   });
 
+  // R1 and R2: planned working days of the stages each target covers
+  const targets = Object.fromEntries(Object.entries(TARGETS).map(([k, t]) => {
+    const mine = stages.filter((st) => t.stages.includes(st.key) && st.steps.length);
+    const days = mine.length ? mine[mine.length - 1].end - mine[0].start : 0;
+    return [k, { ...t, days, limit: t.days[cls], met: days <= t.days[cls] + 1e-9 }];
+  }));
+
   return {
-    variant, cls, steps: planned, stages, total, now, late,
+    variant, cls, steps: planned, stages, total, now, late, targets,
     created,
     delivery: addWorkingDays(created, total),
     dateAt: (offset) => addWorkingDays(created, offset),

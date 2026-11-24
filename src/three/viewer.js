@@ -10,7 +10,7 @@ import { Callouts } from './callouts.js';
 const EXTRA_PARTS = {
   plant: { title: 'Customer process plant', lines: ['Built by others. The chimney is sub-supplied to it.'] },
   person: { title: 'Scale reference', lines: ['Person, 1.8 m'] },
-  ghost: { title: 'Missing from the specification', lines: ['The customer has not specified this yet.', 'Release to design is blocked until they do.'] },
+  ghost: { title: 'Missing from the specification', lines: ['The customer has not specified this yet.', 'The binding quotation is blocked until they do (R3).'] },
 };
 const DISCRETE = new Set(['N', 'harness', 'steps', 'aviation', 'fanCount', 'filterCount', 'laddersMissing', 'platformsMissing', 'steam', 'fanRpm']);
 const ANGLES = new Set(['az', 'doorAz']);

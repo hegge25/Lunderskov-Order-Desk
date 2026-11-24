@@ -2,9 +2,12 @@ import { store } from '../store.js';
 import { computeDesign } from '../engine/design.js';
 import { ChimneyViewer } from '../three/viewer.js';
 import { HEAT_STOPS, heatRange } from '../three/kit.js';
-import { renderStrip } from './strip.js';
+import { renderStrip, highlightSteps } from './strip.js';
 import { mountConfig, updateConfig, focusTarget } from './configPanel.js';
-import { renderDerived, markParts, flashPart } from './derivedPanel.js';
+import { renderDerived, markParts, flashPart, markSteps } from './derivedPanel.js';
+import { openDocs } from './docs.js';
+import { LINKS } from '../config/links.js';
+import { fieldLabel } from '../engine/design.js';
 import { dkk, h, esc } from '../format.js';
 import { explainStrip } from './tour.js';
 
@@ -92,7 +95,7 @@ export function renderOrder(root, id) {
       </div>
       <div class="ometa">
         <div><span>Contact</span><b>${esc(order.contact)}</b></div>
-        <div><span>Estimate</span><b>${dkk(design.price.total)} <small>±${Math.round(design.price.accuracy * 100)}%</small></b></div>
+        <div><span>${design.cls === 'CTO' ? 'Binding price' : 'Estimate'}</span><b>${dkk(design.price.total)} <small>${design.cls === 'CTO' ? 'final (R6)' : `±${Math.round(design.price.accuracy * 100)}%`}</small></b></div>
         <div class="badge big ${design.cls.toLowerCase()}">${design.cls}</div>
       </div>`;
   }
@@ -120,15 +123,33 @@ export function renderOrder(root, id) {
   }
   function renderStripNow() {
     renderStrip(stripEl, order, design, variant, {
-      onVariant: (v) => { variant = v; renderStripNow(); },
+      onVariant: (v) => { variant = v; renderStripNow(); if (hoverLink) showLink(hoverLink); },
       onAdvance: () => { store.advance(order.id); renderStripNow(); },
       onHelp: explainStrip,
     });
   }
+  const LINK_NAME = { inlet: 'The gas inlet', door: 'The cleaning door', ladders: 'The ladder', platforms: 'The platform' };
+  let hoverLink = null;
+  function showLink(link) {
+    hoverLink = link;
+    const l = LINKS[link];
+    if (!l) { highlightSteps(stripEl, null); markSteps(derEl, null); return; }
+    const name = LINK_NAME[link] || fieldLabel(link, order.config);
+    const nums = l.asis.filter((n) => typeof n === 'number');
+    if (variant === 'AS-IS') {
+      highlightSteps(stripEl, [...l.asis, ...l.set].map(String),
+        `<b>${esc(name)}</b> is used in AS-IS step${nums.length > 1 ? 's' : ''} ${nums.join(', ')}${l.asis.includes('loc') ? ' and the regulation look-ups' : ''}, set in step${l.set.length > 1 ? 's' : ''} ${l.set.join(', ')}.`);
+    } else {
+      const ids = l[design.cls];
+      highlightSteps(stripEl, ['Q', ...ids],
+        `<b>${esc(name)}</b> is set in the quotation (R3) and used in ${ids.join(', ')}. AS-IS: ${nums.length} of the 17 steps.`);
+    }
+    markSteps(derEl, l[design.cls]);
+  }
   function refresh() {
     design = computeDesign(order.config);
     updateConfig(cfgEl, order, design);
-    renderDerived(derEl, design);
+    renderDerived(derEl, design, { onDoc: (k) => openDocs(k, design, { id: order.id, customer: order.customer }) });
     renderHead();
     renderStripNow();
     renderLegend();
@@ -138,6 +159,7 @@ export function renderOrder(root, id) {
   mountConfig(cfgEl, order, {
     onChange: (k, v) => { store.setConfig(order.id, k, v); refresh(); },
     onHoverGroup: (g) => viewer.highlight(g ? GROUP_PART[g] : null),
+    onHoverLink: showLink,
   });
   derEl.addEventListener('mouseover', (e) => {
     const r = e.target.closest('[data-part]');
