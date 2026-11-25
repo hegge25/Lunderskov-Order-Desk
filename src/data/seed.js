@@ -26,7 +26,7 @@ export function seedOrders() {
   return [
     {
       id: 'LC-2026-0412', customer: 'Nordvarme A/S', project: 'Biomass boiler line 3',
-      contact: 'Mette Lund', created: ago(2), stage: 'quote', channel: 'sales',
+      contact: 'Mette Lund', created: ago(1), stage: 'quote', channel: 'sales',
       config: { ...full, flowRate: 30, flueTemp: 520, medium: 'Biomass', site: 'DK-Kolding', ladders: null, platforms: null },
     },
     {

@@ -23,7 +23,7 @@ npm run build    # static site in dist/
 | PVM customer view as the form; a value outside an interval makes the order ETO | PVM, Appendix 1; CTO/ETO split (§4.2) |
 | Chips under each field: the AS-IS steps (Appendix 3) and TO-BE steps that use it. Hovering lights them up on the strip | PVM–process link, ASIS and TOBE columns (§2.2, §4.2, §4.3) |
 | "Send binding quotation" is blocked while the ladder, platform or any other field is missing | R3: complete specification at the quotation |
-| Progress strip: TO-BE steps from the swimlanes (quotation scenario 2, CTO C1–C6, ETO E1–E8 with E4 parallel to E2), AS-IS steps from the case with the Appendix 3 numbers, including the three capacity re-calculations | TO-BE attachments (§4.1, §4.2); AS-IS processing times (§2.1) |
+| Progress strip: the order's stages in the TO-BE process, and below them the same order through TO-BE and AS-IS as two bars on one scale, every step to scale and coloured by stage, with the days saved, R1/R2 per process and the planned delivery dates. TO-BE steps from the swimlanes (quotation scenario 2, CTO C1–C6, ETO E1–E8 with E4 parallel to E2); AS-IS steps from the case with the Appendix 3 numbers, including the three capacity re-calculations. Hovering a field lights up the steps that use it in both bars | TO-BE attachments (§4.1, §4.2); AS-IS processing times (§2.1); R1, R2 (§3.2) |
 | R1 and R2 badges on the quotation and design stages | §3.2 |
 | Right column grouped by TO-BE step: emission → material → H, d, N and heat loss as one joint task → strength → details | Process DSM (Figure 2), re-sequencing (§4.2) |
 | C5: part list and drawing with main dimensions, generated from the configuration. Part names follow the PVM part view | CTO chart C5; framework, Appendix C |

@@ -22,7 +22,6 @@ const TOGGLES = [
 ];
 const PRESETS = [['overview', 'Overview', '1'], ['base', 'Base', '2'], ['top', 'Top', '3'], ['plan', 'Plan', '4']];
 
-let variant = 'TO-BE';
 const savedToggles = (() => {
   try { return JSON.parse(localStorage.getItem('lod.toggles')) || {}; } catch { return {}; }
 })();
@@ -122,11 +121,11 @@ export function renderOrder(root, id) {
       <span><em>H</em>${v.H} m</span><span><em>Ø</em>${v.D.toFixed(2)} m</span><span><em>N</em>${v.N} × ${v.d.toFixed(2)} m</span><span><em>W</em>${(v.weight / 1000).toFixed(1)} t</span>`;
   }
   function renderStripNow() {
-    renderStrip(stripEl, order, design, variant, {
-      onVariant: (v) => { variant = v; renderStripNow(); if (hoverLink) showLink(hoverLink); },
+    renderStrip(stripEl, order, design, {
       onAdvance: () => { store.advance(order.id); renderStripNow(); },
       onHelp: explainStrip,
     });
+    if (hoverLink) showLink(hoverLink);
   }
   const LINK_NAME = { inlet: 'The gas inlet', door: 'The cleaning door', ladders: 'The ladder', platforms: 'The platform' };
   let hoverLink = null;
@@ -136,14 +135,10 @@ export function renderOrder(root, id) {
     if (!l) { highlightSteps(stripEl, null); markSteps(derEl, null); return; }
     const name = LINK_NAME[link] || fieldLabel(link, order.config);
     const nums = l.asis.filter((n) => typeof n === 'number');
-    if (variant === 'AS-IS') {
-      highlightSteps(stripEl, [...l.asis, ...l.set].map(String),
-        `<b>${esc(name)}</b> is used in AS-IS step${nums.length > 1 ? 's' : ''} ${nums.join(', ')}${l.asis.includes('loc') ? ' and the regulation look-ups' : ''}, set in step${l.set.length > 1 ? 's' : ''} ${l.set.join(', ')}.`);
-    } else {
-      const ids = l[design.cls];
-      highlightSteps(stripEl, ['Q', ...ids],
-        `<b>${esc(name)}</b> is set in the quotation (R3) and used in ${ids.join(', ')}. AS-IS: ${nums.length} of the 17 steps.`);
-    }
+    const ids = l[design.cls];
+    const loc = l.asis.includes('loc') ? ' + the regulation look-ups' : '';
+    highlightSteps(stripEl, { 'TO-BE': ['Q', ...ids], 'AS-IS': [...l.asis, ...l.set].map(String) },
+      `<b>${esc(name)}</b> · TO-BE: entered once in the quotation (R3), used in ${ids.join(', ')} · <span class="cap-asis">AS-IS: used in ${nums.length} of the 17 steps (${nums.join(', ')})${loc}</span>`);
     markSteps(derEl, l[design.cls]);
   }
   function refresh() {

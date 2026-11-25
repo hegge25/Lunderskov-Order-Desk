@@ -1,16 +1,38 @@
-// Progress strip: stages with planned dates and the R1/R2 targets, a to-scale bar of every step
-// (parallel steps in a second lane), and the AS-IS comparison.
+// Progress strip. Top: this order's stages in the TO-BE process, with the action that moves it on.
+// Below: the same order run through both processes, as two bars on one scale. Each bar is every
+// step to scale, coloured by stage, so the difference between the report's TO-BE and the case's
+// AS-IS is visible at a glance; the gap between the two ends is the time saved.
 import { schedule, fmtDate, fmtDays } from '../engine/timeline.js';
 import { STAGES, ACTIONS } from '../config/process.js';
 import { h, esc } from '../format.js';
 
-const reqChip = (t, key) => h`<span class="st-req ${t.met ? 'ok' : 'bad'}" title="${esc(`${key}: ${t.text}. This plan: ${fmtDays(Math.round(t.days * 10) / 10)} against ${t.limit} d.`)}">${key} ${t.met ? '✓' : '✗'}</span>`;
+const STAGE_LABEL = Object.fromEntries(STAGES.map((s) => [s.key, s.label]));
+const rd = (n) => Math.round(n * 10) / 10;
 
-export function renderStrip(el, order, design, variant, handlers) {
+const reqChip = (t, key) => h`<span class="cmp-req ${t.met ? 'ok' : 'bad'}" title="${esc(`${key}: ${t.text}. This plan: ${fmtDays(rd(t.days))} against ${t.limit} d.`)}">${key} ${t.met ? '✓' : '✗'} <em>${fmtDays(rd(t.days))}</em></span>`;
+
+const stepTitle = (st, variant) => `${st.ref ? `${variant === 'AS-IS' ? 'Step ' : ''}${st.ref} · ` : ''}${st.label} · ${st.owner} · ${fmtDays(Math.round((st.end - st.start) * 100) / 100)}${st.par ? ' · in parallel' : ''}`;
+
+function bar(s, scale) {
+  const pct = (d) => `${(d / scale) * 100}%`;
+  const refs = (st) => [st.ref, st.hl, s.variant === 'TO-BE' && (st.stage === 'quote' || st.stage === 'enquiry') ? 'Q' : ''].filter(Boolean).join(' ');
+  return h`
+    ${s.steps.map((st) => h`<span class="g-seg s-${st.stage} ${st.status === 'late' ? 'late' : ''} ${st.wait ? 'wait' : ''} ${st.par ? 'par' : ''}" data-refs="${refs(st)}" style="left:${pct(st.start)};width:${pct(st.end - st.start)}" title="${esc(stepTitle(st, s.variant))}"></span>`)}
+    ${s.stages.filter((st) => st.steps.length).map((st) => h`<span class="cmp-lab s-${st.key}" data-long="${esc(`${st.label} ${fmtDays(rd(st.days))}`)}" data-short="${fmtDays(rd(st.days))}" style="left:${pct(st.start)};width:${pct(st.days)}"></span>`)}`;
+}
+
+// Stage labels inside the bars: the full label if it fits, else just the days, else nothing.
+function fitLabels(el) {
+  el.querySelectorAll('.cmp-lab').forEach((l) => {
+    l.textContent = l.dataset.long;
+    if (l.scrollWidth > l.clientWidth + 1) l.textContent = l.dataset.short;
+    if (l.scrollWidth > l.clientWidth + 1) l.textContent = '';
+  });
+}
+
+export function renderStrip(el, order, design, handlers) {
   const tobe = schedule(order, design.cls, 'TO-BE');
   const asis = schedule(order, design.cls, 'AS-IS');
-  const s = variant === 'AS-IS' ? asis : tobe;
-  const other = variant === 'AS-IS' ? tobe : asis;
   const scale = Math.max(tobe.total, asis.total);
   const pct = (d) => `${(d / scale) * 100}%`;
   const saved = asis.total - tobe.total;
@@ -23,31 +45,28 @@ export function renderStrip(el, order, design, variant, handlers) {
     ? `${design.missing.length} field${design.missing.length > 1 ? 's' : ''} missing (R3)`
     : `${design.errors.length} conflict${design.errors.length > 1 ? 's' : ''}`;
   const actLabel = act && (typeof act.label === 'string' ? act.label : act.label[design.cls]);
-  const hasPar = s.steps.some((x) => x.par);
+
+  const row = (s) => h`
+    <div class="cmp-row ${s.variant === 'TO-BE' ? 'tobe' : 'asis'}">
+      <span class="cmp-name">${s.variant}</span>
+      <div class="cmp-track" data-track="${s.variant}">
+        ${bar(s, scale)}
+        ${s.variant === 'TO-BE' && saved > 0.5 ? h`<span class="cmp-gap" style="left:${pct(s.total)};width:${pct(saved)}"><em>${Math.round(saved)} working days sooner · −${Math.round((saved / asis.total) * 100)} %</em></span>` : ''}
+      </div>
+      <span class="cmp-end">
+        ${reqChip(s.targets.R1, 'R1')}${reqChip(s.targets.R2, 'R2')}
+        <span class="cmp-total" title="${esc(`${Math.round(s.total)} working days from the enquiry to the installed chimney`)}"><b>${fmtDate(s.delivery)}</b> ${Math.round(s.total)} d</span>
+      </span>
+    </div>`;
 
   el.innerHTML = h`
     <div class="strip-row">
-      <div class="strip-sum">
-        <div class="seg seg-sm" data-variant>
-          ${['TO-BE', 'AS-IS'].map((v) => `<button class="${v === variant ? 'on' : ''}" data-v="${v}">${v}</button>`)}
-        </div>
-        <div class="sum-main">
-          <span class="sum-label">${delivered ? 'Delivered' : 'Planned delivery'}</span>
-          <b>${fmtDate(s.delivery)}</b>
-        </div>
-        <div class="sum-sub">
-          <span>${Math.round(s.total)} working days from enquiry</span>
-          <span class="delta ${variant === 'AS-IS' ? 'bad' : 'good'}">${variant === 'AS-IS' ? `${Math.round(saved)} d later than TO-BE` : `${Math.round(saved)} d sooner than AS-IS`}</span>
-        </div>
-        <button class="help" data-help title="How to read this strip">?</button>
-      </div>
       <ol class="stages">
-        ${s.stages.map((st) => h`
-          <li class="stage ${st.status}" data-stage="${st.key}" title="${esc(st.steps.map((x) => `${x.ref ? `${variant === 'AS-IS' ? 'Step ' : ''}${x.ref} · ` : ''}${x.label} · ${x.owner} · ${fmtDays(x.days)}`).join('\n'))}">
+        ${tobe.stages.map((st) => h`
+          <li class="stage ${st.status}" data-stage="${st.key}" title="${esc(st.steps.map((x) => `${x.ref ? `${x.ref} · ` : ''}${x.label} · ${x.owner} · ${fmtDays(x.days)}`).join('\n'))}">
             <span class="dot"></span>
-            <span class="st-name">${st.label}${st.key === 'quote' ? reqChip(s.targets.R1, 'R1') : ''}${st.key === 'design' ? reqChip(s.targets.R2, 'R2') : ''}</span>
-            <span class="st-when">${st.status === 'done' ? 'Done' : st.endDate ? `by ${fmtDate(st.endDate)}` : ''}</span>
-            <span class="st-dur">${fmtDays(Math.round(st.days * 10) / 10)}${st.status === 'late' ? ' · late' : ''}</span>
+            <span class="st-name">${st.label}</span>
+            <span class="st-when">${st.status === 'done' ? 'Done' : st.endDate ? `by ${fmtDate(st.endDate)}${st.status === 'late' ? ' · late' : ''}` : ''}</span>
           </li>`)}
       </ol>
       <div class="strip-act">
@@ -56,33 +75,40 @@ export function renderStrip(el, order, design, variant, handlers) {
           ${gate ? `<span class="gate-why">Blocked: ${gateWhy}</span>` : ''}`}
       </div>
     </div>
-    <div class="gantt ${hasPar ? 'two' : ''}">
-      <div class="g-track" data-track>
-        ${s.steps.map((st) => h`<span class="g-seg ${st.status} ${st.wait ? 'wait' : ''} ${st.auto ? 'auto' : ''} ${st.par ? 'par' : ''}" data-refs="${[st.ref, st.hl, variant === 'TO-BE' && (st.stage === 'quote' || st.stage === 'enquiry') ? 'Q' : ''].filter(Boolean).join(' ')}" style="left:${pct(st.start)};width:${pct(st.end - st.start)}" title="${esc(`${st.ref ? `${variant === 'AS-IS' ? 'Step ' : ''}${st.ref} · ` : ''}${st.label} · ${st.owner} · ${fmtDays(Math.round((st.end - st.start) * 100) / 100)}${st.par ? ' · in parallel' : ''}`)}"></span>`)}
-        ${!delivered ? `<span class="g-today" style="left:${pct(Math.min(s.now, scale))}"><em>Today</em></span>` : ''}
-        <span class="g-other ${other.total / scale > 0.85 ? 'end' : ''}" style="left:${pct(other.total)}"><em>${other.variant} ${fmtDate(other.delivery)}</em></span>
+    <div class="cmp">
+      <div class="cmp-head">
+        <span>Same order, same enquiry date: the report's TO-BE process against the case's AS-IS</span>
+        <button class="help" data-help title="How to read this strip">?</button>
       </div>
-      <div class="g-cap" data-cap></div>
+      <div class="cmp-body" data-bars>
+        ${row(tobe)}
+        ${row(asis)}
+        ${!delivered ? `<span class="cmp-today" style="--xf:${Math.min(tobe.now, scale) / scale}"><em>Today</em></span>` : ''}
+        <div class="g-cap" data-cap></div>
+      </div>
     </div>`;
 
-  el.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => handlers.onVariant(b.dataset.v)));
+  fitLabels(el);
+  if (!el._fitBound) {
+    el._fitBound = true;
+    window.addEventListener('resize', () => el.isConnected && fitLabels(el));
+  }
   el.querySelector('[data-advance]')?.addEventListener('click', handlers.onAdvance);
   el.querySelector('[data-help]').addEventListener('click', handlers.onHelp);
 }
 
-// Light up the steps that use a PVM attribute: TO-BE refs (C2, E5) or AS-IS step numbers.
+// Light up the steps that use a PVM attribute in both bars: TO-BE refs (Q, C2, E5) and AS-IS step
+// numbers. `refs` is { 'TO-BE': [...], 'AS-IS': [...] }, or null to clear.
 export function highlightSteps(el, refs, caption = '') {
   const cap = el.querySelector('[data-cap]');
   if (cap) { cap.innerHTML = caption; cap.classList.toggle('on', !!caption); }
-  const track = el.querySelector('[data-track]');
-  if (!track) return;
-  const want = new Set(refs || []);
-  let any = false;
-  track.querySelectorAll('.g-seg').forEach((seg) => {
-    const hit = want.size > 0 && seg.dataset.refs.split(' ').some((r) => want.has(r));
-    seg.classList.toggle('hl', hit);
-    any ||= hit;
+  const body = el.querySelector('[data-bars]');
+  if (!body) return;
+  body.classList.toggle('hl-mode', !!refs);
+  body.querySelectorAll('[data-track]').forEach((track) => {
+    const want = new Set((refs && refs[track.dataset.track]) || []);
+    track.querySelectorAll('.g-seg').forEach((seg) => {
+      seg.classList.toggle('hl', want.size > 0 && seg.dataset.refs.split(' ').some((r) => want.has(r)));
+    });
   });
-  track.classList.toggle('hl-mode', want.size > 0);
-  track.dataset.hlCount = any ? String(track.querySelectorAll('.g-seg.hl').length) : '0';
 }

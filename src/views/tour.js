@@ -8,17 +8,14 @@ const txt = (sel) => document.querySelector(sel)?.textContent.trim() || '';
 
 // The progress strip, number by number. Text is filled in from what is on screen.
 const STRIP_MARKS = [
-  { sel: '.strip-sum [data-variant]', text: () => '<b>TO-BE / AS-IS</b> switches between the report\'s future process and today\'s. Same order, same enquiry date: only the process changes.' },
-  { sel: '.sum-main b', text: () => `<b>${txt('.sum-main b')}</b> is the planned delivery: when the chimney is installed if the remaining steps run to plan. A late step pushes it back.` },
-  { sel: '.sum-sub span:first-child', text: () => `<b>${txt('.sum-sub span:first-child')}</b> from the enquiry to the installed chimney, including about 8 days waiting for the customer's decision (our assumption). Weekends are not counted.` },
-  { sel: '.delta', text: () => `<b>${txt('.delta')}</b>: the same order run through the other process.` },
-  { sel: '.stage.active .st-when, .stage.late .st-when', at: 'right', text: () => 'Each stage shows when it should be finished (<b>by …</b>), or <b>Done</b>.' },
-  { sel: '.stage.active .st-dur, .stage.late .st-dur', at: 'right', text: () => 'Its length in working days. <b>late</b> means the current step overran: it is stretched to today and everything after it moves.' },
-  { sel: '.st-req', at: 'right', text: () => '<b>R1</b> and <b>R2</b> check the plan against the case\'s targets: a quotation within 1–2 days, design within 2 days for CTO and 2 weeks for ETO. Hover for the numbers.' },
-  { sel: '.g-track', at: 'below', text: () => 'Every step to scale: TO-BE from the report\'s swimlanes, AS-IS from the case with the Appendix 3 step numbers. Grey is done, orange in progress, red late, <b>blue</b> the configurator. <b>Hatched</b> steps wait on others. ETO orders get a second lane: E4 runs in parallel with E2.' },
-  { sel: '.g-today em', at: 'right', text: () => '<b>Today.</b>' },
-  { sel: '.g-other em', at: 'left', text: () => `<b>${txt('.g-other em')}</b>: when the other process would deliver this order.` },
+  { sel: '.stages', text: () => 'This order in the TO-BE process: when each stage should be finished (<b>by …</b>), or <b>Done</b>. <b>late</b> means the current step overran; everything after it moves.' },
   { sel: '.strip-act .btn', text: () => 'Moves the order on. <b>Send binding quotation</b> stays blocked while information is missing or conflicting (R3).' },
+  { sel: '.cmp-row.tobe .cmp-name', at: 'left', text: () => '<b>TO-BE</b>: the same order through the report\'s process, every step to scale and coloured by stage. Hover a block for the step (C1–C6, E1–E8). <b>Hatched</b> steps wait on others: the customer\'s decision (our assumption, 8 days) or the regulations.' },
+  { sel: '.cmp-row.asis .cmp-name', at: 'left', text: () => '<b>AS-IS</b>: the same order and enquiry date through today\'s process, using the case\'s times (pp. 6–7). Hover a block for its Appendix 3 step numbers.' },
+  { sel: '.cmp-gap em', at: 'left', text: () => `<b>${txt('.cmp-gap em')}</b>: the gain. Most of it comes from quotation (blue) and design (purple).` },
+  { sel: '.cmp-row.tobe .cmp-req', at: 'left', text: () => '<b>R1</b> and <b>R2</b> check each plan against the case\'s targets: a quotation within 1–2 days, design within 2 days for CTO and 2 weeks for ETO. Hover a chip for the numbers.' },
+  { sel: '.cmp-row.tobe .cmp-total b', text: () => 'Planned delivery and working days from the enquiry (weekends not counted).' },
+  { sel: '.cmp-today em', at: 'right', text: () => '<b>Today.</b> Hover a field on the left to light up, in both bars, the steps that use it.' },
 ];
 
 const STRIP_STEP = {
@@ -57,7 +54,7 @@ const MAIN = [
     place: 'right',
     title: 'The PVM, linked to the process',
     body: `<p>The fields are the <b>customer view of the PVM</b>; each slider's green band is the interval. The chips under each field are the <b>PVM–process link</b>: the AS-IS steps (Appendix 3) and TO-BE steps that use the attribute.</p>
-      <p><b>Try it:</b> hover <i>Flow rate</i> and watch the strip. Then switch the strip to <b>AS-IS</b> and hover again: 8 steps instead of 1.</p>`,
+      <p><b>Try it:</b> hover <i>Flow rate</i> and watch the strip: one step in TO-BE, 8 steps spread over AS-IS.</p>`,
   },
   {
     route: `#/order/${DEMO}`,
@@ -98,7 +95,7 @@ const MAIN = [
     body: `<ul>
       <li>Set <i>Location</i> to <b>Other</b>: the order becomes ETO and the right column switches to E2–E8.</li>
       <li>Put the <i>cleaning door</i> at <b>90°</b>: it collides with the gas inlet.</li>
-      <li>Switch the strip to <b>AS-IS</b> and hover a field.</li>
+      <li>Hover a field and compare the TO-BE and AS-IS bars.</li>
       <li>Open the <b>drawing</b> in C5.</li>
       <li>Request a quotation in the <b>web configurator</b> and find it on the board.</li>
     </ul>
@@ -259,6 +256,7 @@ class Tour {
       if (m.at === 'right') { x = r.right + 13; y = r.top + r.height / 2; }
       if (m.at === 'left') { x = r.left - 13; y = r.top + r.height / 2; }
       if (m.at === 'below') { x = r.left + 9; y = r.bottom + 12; }
+      x = Math.max(11, Math.min(x, window.innerWidth - 11));
       node.style.transform = `translate(${x - 9}px, ${y - 9}px)`;
     });
   }
