@@ -2,7 +2,7 @@
 // report's TO-BE process (process DSM, Figure 2): regulations and emission first, then the
 // material, then H, d, N and the heat loss as one joint task, then strength and details.
 // Each rule is tagged with its task; TASKS maps a task to the CTO step (C2–C4, all in the order
-// configurator) or the ETO step (E2–E7, with the people who own it). Numbers are dummy.
+// configurator) or the ETO step (E2–E7, with the people who own it). Numbers are illustrative.
 
 import { FIELDS, ITEM_FIELDS, MEDIA, INLET_ANGLE, fieldDef, parseItemKey } from '../config/pvm.js';
 import {

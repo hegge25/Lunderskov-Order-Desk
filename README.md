@@ -42,7 +42,7 @@ Shortcuts on the order page: `C` cutaway, `X` x-ray, `D` dimensions, `S` smoke, 
 | PVM fields and intervals | `src/config/pvm.js` |
 | PVM–process link (ASIS / TOBE columns) | `src/config/links.js` |
 | Process steps, durations, R1/R2 targets | `src/config/process.js` |
-| Dummy regulations, locations, filters, materials | `src/config/rules.js` |
+| Illustrative regulations, locations, filters, materials | `src/config/rules.js` |
 | Design rules, TO-BE step mapping, part list, quote | `src/engine/design.js` |
 | Drawing and part list views | `src/views/docs.js` |
 | Web configurator | `src/views/web.js` |

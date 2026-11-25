@@ -1,4 +1,4 @@
-// Dummy regulation and engineering tables. Not real data: they only need to behave plausibly.
+// Illustrative regulation and engineering tables, assumed where the case gives no data. They only need to behave plausibly.
 
 // Local requirements per site: wind zone, building regulation height limits, emission strictness.
 export const SITES = {
@@ -26,7 +26,7 @@ export const FILTERS = {
   E: { label: 'Type E · scrubber + carbon', reduction: 0.55, price: 240000 },
 };
 
-// Plate materials, from the PVM material table, plus dummy prices and densities.
+// Plate materials, from the PVM material table, plus illustrative prices and densities.
 export const MATERIALS = {
   'Corten Steel':    { k: 32, density: 7850, pricePerKg: 34, look: 'corten' },
   'Carbon Steel':    { k: 25, density: 7850, pricePerKg: 28, look: 'painted' },
