@@ -13,12 +13,15 @@ const reqChip = (t, key) => h`<span class="cmp-req ${t.met ? 'ok' : 'bad'}" titl
 
 const stepTitle = (st, variant) => `${st.ref ? `${variant === 'AS-IS' ? 'Step ' : ''}${st.ref} · ` : ''}${st.label} · ${st.owner} · ${fmtDays(Math.round((st.end - st.start) * 100) / 100)}${st.par ? ' · in parallel' : ''}`;
 
+// Geometry is written as numbers (percent of the track) too, so a re-render can morph from it.
+const geo = (l, w) => `data-l="${l}" data-w="${w}" style="left:${l}%;width:${w}%"`;
+
 function bar(s, scale) {
-  const pct = (d) => `${(d / scale) * 100}%`;
+  const p = (d) => (d / scale) * 100;
   const refs = (st) => [st.ref, st.hl, s.variant === 'TO-BE' && (st.stage === 'quote' || st.stage === 'enquiry') ? 'Q' : ''].filter(Boolean).join(' ');
   return h`
-    ${s.steps.map((st) => h`<span class="g-seg s-${st.stage} ${st.status === 'late' ? 'late' : ''} ${st.wait ? 'wait' : ''} ${st.par ? 'par' : ''}" data-refs="${refs(st)}" style="left:${pct(st.start)};width:${pct(st.end - st.start)}" title="${esc(stepTitle(st, s.variant))}"></span>`)}
-    ${s.stages.filter((st) => st.steps.length).map((st) => h`<span class="cmp-lab s-${st.key}" data-long="${esc(`${st.label} ${fmtDays(rd(st.days))}`)}" data-short="${fmtDays(rd(st.days))}" style="left:${pct(st.start)};width:${pct(st.days)}"></span>`)}`;
+    ${s.steps.map((st) => h`<span class="g-seg s-${st.stage} ${st.status === 'late' ? 'late' : ''} ${st.wait ? 'wait' : ''} ${st.par ? 'par' : ''}" data-key="${esc(`${s.variant}|${st.stage}|${st.label}`)}" data-stage="${st.stage}" data-refs="${refs(st)}" ${geo(p(st.start), p(st.end - st.start))} title="${esc(stepTitle(st, s.variant))}"></span>`)}
+    ${s.stages.filter((st) => st.steps.length).map((st) => h`<span class="cmp-lab s-${st.key}" data-key="${s.variant}|lab|${st.key}" data-long="${esc(`${st.label} ${fmtDays(rd(st.days))}`)}" data-short="${fmtDays(rd(st.days))}" ${geo(p(st.start), p(st.days))}></span>`)}`;
 }
 
 // Stage labels inside the bars: the full label if it fits, else just the days, else nothing.
@@ -30,11 +33,91 @@ function fitLabels(el) {
   });
 }
 
+// ── Morphing between renders (CTO ⇄ ETO, an order moving on) ──
+// Each segment starts where the same step was. A step the old bar did not have starts at its
+// relative place inside the old bar's span for the same stage, so the stage appears to stretch
+// or shrink rather than jump. Numbers count from the old value to the new one.
+const MORPH_MS = 650;
+
+function snapshot(el) {
+  const keys = new Map();
+  const stages = new Map();
+  el.querySelectorAll('[data-track]').forEach((track) => {
+    const v = track.dataset.track;
+    const tr = track.getBoundingClientRect();
+    track.querySelectorAll('[data-key]').forEach((n) => {
+      // where it is on screen now, mid-animation included, so back-to-back renders carry on
+      const r = n.getBoundingClientRect();
+      const g = tr.width ? { l: ((r.left - tr.left) / tr.width) * 100, w: (r.width / tr.width) * 100 } : { l: +n.dataset.l, w: +n.dataset.w };
+      keys.set(n.dataset.key, g);
+      const st = n.dataset.stage;
+      if (!st) return;
+      const k = `${v}|${st}`;
+      const o = stages.get(k);
+      stages.set(k, o ? { l: Math.min(o.l, g.l), r: Math.max(o.r, g.l + g.w) } : { l: g.l, r: g.l + g.w });
+    });
+  });
+  const nums = new Map([...el.querySelectorAll('[data-num]')].map((n) => [n.dataset.num, +n.textContent]));
+  return keys.size ? { keys, stages, nums } : null;
+}
+
+function morph(el, before) {
+  if (!before || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const moves = [];
+  el.querySelectorAll('[data-track]').forEach((track) => {
+    const v = track.dataset.track;
+    // the new bar's stage spans, to place new steps relative to them
+    const spans = new Map();
+    track.querySelectorAll('.g-seg').forEach((n) => {
+      const l = +n.dataset.l, r = l + +n.dataset.w, o = spans.get(n.dataset.stage);
+      spans.set(n.dataset.stage, o ? { l: Math.min(o.l, l), r: Math.max(o.r, r) } : { l, r });
+    });
+    track.querySelectorAll('[data-key]').forEach((n) => {
+      const to = { l: +n.dataset.l, w: +n.dataset.w };
+      let from = before.keys.get(n.dataset.key);
+      const st = n.dataset.stage || (n.classList.contains('cmp-lab') && n.dataset.key.split('|')[2]);
+      if (!from && st) {
+        const was = before.stages.get(`${v}|${st}`);
+        const now = spans.get(st) || { l: to.l, r: to.l + to.w };
+        if (was) {
+          const k = (was.r - was.l) / Math.max(now.r - now.l, 1e-6);
+          from = { l: was.l + (to.l - now.l) * k, w: to.w * k };
+        }
+      }
+      if (!from && n.dataset.key === 'gap') from = { l: to.l + to.w, w: 0 };
+      if (!from) { n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MORPH_MS, easing: 'ease-out' }); return; }
+      if (Math.abs(from.l - to.l) < 0.01 && Math.abs(from.w - to.w) < 0.01) return;
+      moves.push([n, from, to]);
+    });
+  });
+  moves.forEach(([n, from, to]) => n.animate(
+    [{ left: `${from.l}%`, width: `${from.w}%` }, { left: `${to.l}%`, width: `${to.w}%` }],
+    { duration: MORPH_MS, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' },
+  ));
+  // labels re-fit to the new widths, so fade them in at the end, only in a bar that moved
+  new Set(moves.map(([n]) => n.closest('[data-track]'))).forEach((track) => {
+    track.querySelectorAll('.cmp-lab, .cmp-gap em').forEach((n) => n.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }], { duration: MORPH_MS }));
+  });
+  el.querySelectorAll('[data-num]').forEach((n) => {
+    const a = before.nums.get(n.dataset.num);
+    const b = +n.textContent;
+    if (a == null || a === b) return;
+    const t0 = performance.now();
+    const tick = (t) => {
+      const f = Math.min(1, (t - t0) / MORPH_MS);
+      const e = 1 - (1 - f) ** 3;
+      n.textContent = Math.round(a + (b - a) * e);
+      if (f < 1 && n.isConnected) requestAnimationFrame(tick);
+    };
+    n.textContent = a;
+    requestAnimationFrame(tick);
+  });
+}
+
 export function renderStrip(el, order, design, handlers) {
   const tobe = schedule(order, design.cls, 'TO-BE');
   const asis = schedule(order, design.cls, 'AS-IS');
   const scale = Math.max(tobe.total, asis.total);
-  const pct = (d) => `${(d / scale) * 100}%`;
   const saved = asis.total - tobe.total;
   const delivered = order.stage === 'done';
   const act = ACTIONS[order.stage];
@@ -51,14 +134,15 @@ export function renderStrip(el, order, design, handlers) {
       <span class="cmp-name">${s.variant}</span>
       <div class="cmp-track" data-track="${s.variant}">
         ${bar(s, scale)}
-        ${s.variant === 'TO-BE' && saved > 0.5 ? h`<span class="cmp-gap" style="left:${pct(s.total)};width:${pct(saved)}"><em>${Math.round(saved)} working days sooner · −${Math.round((saved / asis.total) * 100)} %</em></span>` : ''}
+        ${s.variant === 'TO-BE' && saved > 0.5 ? h`<span class="cmp-gap" data-key="gap" ${geo((s.total / scale) * 100, (saved / scale) * 100)}><em><span data-num="gap-d">${Math.round(saved)}</span> working days sooner · −<span data-num="gap-p">${Math.round((saved / asis.total) * 100)}</span> %</em></span>` : ''}
       </div>
       <span class="cmp-end">
         ${reqChip(s.targets.R1, 'R1')}${reqChip(s.targets.R2, 'R2')}
-        <span class="cmp-total" title="${esc(`${Math.round(s.total)} working days from the enquiry to the installed chimney`)}"><b>${fmtDate(s.delivery)}</b> ${Math.round(s.total)} d</span>
+        <span class="cmp-total" title="${esc(`${Math.round(s.total)} working days from the enquiry to the installed chimney`)}"><b>${fmtDate(s.delivery)}</b> <span data-num="${s.variant}-total">${Math.round(s.total)}</span> d</span>
       </span>
     </div>`;
 
+  const before = snapshot(el);
   el.innerHTML = h`
     <div class="strip-row">
       <ol class="stages">
@@ -89,6 +173,7 @@ export function renderStrip(el, order, design, handlers) {
     </div>`;
 
   fitLabels(el);
+  morph(el, before);
   if (!el._fitBound) {
     el._fitBound = true;
     window.addEventListener('resize', () => el.isConnected && fitLabels(el));
