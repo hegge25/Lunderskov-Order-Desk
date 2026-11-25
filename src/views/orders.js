@@ -45,7 +45,7 @@ export function renderOrders(root) {
         <div class="kpi ${late + blocked ? 'warn' : ''}"><span>Needs attention</span><b>${late + blocked}</b><small>${late} late · ${blocked} blocked (R3)</small></div>
       </div>
       <table class="otable">
-        <thead><tr><th>Order</th><th>Customer · project</th><th>Channel</th><th>Location</th><th>Type</th><th>Progress</th><th>Delivery</th><th>Status</th><th>Value</th><th>Contact</th></tr></thead>
+        <thead><tr><th>Order</th><th>Customer · project</th><th class="c-chan">Channel</th><th>Location</th><th class="c-type">Type</th><th>Progress</th><th>Delivery</th><th>Status</th><th>Value</th><th>Contact</th></tr></thead>
         <tbody>
           ${rows.map(({ o, d, s }) => {
             const si = o.stage === 'done' ? STAGES.length : STAGES.findIndex((x) => x.key === o.stage);
@@ -59,9 +59,9 @@ export function renderOrders(root) {
               <tr data-id="${o.id}">
                 <td class="mono">${o.id}</td>
                 <td><b>${esc(o.customer)}</b><span class="sub">${esc(o.project)}</span></td>
-                <td><span class="chan ${o.channel || 'sales'}">${o.channel === 'web' ? 'Web' : 'Sales'}</span></td>
+                <td class="c-chan"><span class="chan ${o.channel || 'sales'}">${o.channel === 'web' ? 'Web' : 'Sales'}</span></td>
                 <td>${esc(site.label)}</td>
-                <td><span class="badge ${d.cls.toLowerCase()}">${d.cls}</span></td>
+                <td class="c-type"><span class="badge ${d.cls.toLowerCase()}">${d.cls}</span></td>
                 <td>
                   <div class="mini">${STAGES.map((st, i) => `<i class="${i < si ? 'done' : i === si ? (s.late ? 'late' : 'active') : ''}" title="${st.label}"></i>`).join('')}</div>
                   <span class="sub">${o.stage === 'done' ? 'Delivered' : STAGES[si].label}</span>

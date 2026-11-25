@@ -31,7 +31,7 @@ npm run build    # static site in dist/
 | Web configurator: budget price, standard drawing, "Request binding quotation" creates the enquiry in the Order Desk | Quotation scenario 2, R7 |
 | 3D chimney: cutaway, X-ray, dimensions, smoke, wind profile, callouts that jump to their field, ghost parts for missing information | — |
 
-A **guided tour** runs on the first visit and can be replayed with **Tour** in the top bar. The **?** on the progress strip explains each of its numbers.
+A **guided tour** runs on the first visit and can be replayed with **Tour** in the top bar. In 18 steps and six chapters it follows one order from the customer's web configurator to the salesperson's order page and the design, citing the case and the report. Two steps act on the page themselves: one hovers *Flow rate* to show the PVM–process link, the other moves the order to an unknown site so it becomes ETO, then sets it back. The **?** on the progress strip explains each of its numbers.
 
 Shortcuts on the order page: `C` cutaway, `X` x-ray, `D` dimensions, `S` smoke, `W` wind, `K` context, `1–4` camera presets.
 

@@ -145,9 +145,10 @@ small { color: var(--ink-3); font-size: 11px; font-weight: 400; }
 
 /* Guided tour */
 .tour { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
-.tour-spot { position: fixed; box-shadow: 0 0 0 9999px rgba(10,14,18,0.58); border: 2px solid var(--accent); transition: left 0.35s, top 0.35s, width 0.35s, height 0.35s; pointer-events: none; }
+.tour-shade { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tour-ring { fill: none; stroke: var(--accent); stroke-width: 2; }
 .tour-card {
-  position: fixed; left: 0; top: 0; width: 340px; pointer-events: auto;
+  position: fixed; left: 0; top: 0; width: 380px; pointer-events: auto;
   background: var(--panel); color: var(--ink); border-radius: 10px; padding: 16px 18px 14px;
   box-shadow: 0 18px 50px rgba(0,0,0,0.35); transition: transform 0.35s;
 }
@@ -544,3 +545,14 @@ select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-ra
 /* Field titles and step chips are what light up the strip */
 .cfg:not(.web-form) .f-top label, .cfg:not(.web-form) .fgroup > header span:first-child { cursor: help; text-decoration: underline dotted transparent; text-underline-offset: 3px; transition: text-decoration-color 0.15s; }
 .cfg:not(.web-form) .f-top label:hover, .cfg:not(.web-form) .fgroup > header span:first-child:hover { text-decoration-color: var(--accent); }
+/* Tour card: chapter, progress, sources */
+.t-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.t-chap { font: 600 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+.t-prog { height: 3px; background: var(--line-2); border-radius: 2px; margin: 6px 0 10px; overflow: hidden; }
+.t-prog i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.35s; }
+.t-src { margin: 2px 0 8px; font: 400 10.5px var(--mono); color: var(--ink-3); }
+.t-src::before { content: 'Source · '; color: var(--ink-3); }
+.t-note { font-size: 12px; color: var(--ink-3) !important; }
+.t-outline { margin: 0 0 10px; padding-left: 20px; color: var(--ink-2); }
+.t-outline li { margin-bottom: 2px; }
+.t-list.one-col { columns: 1; }
