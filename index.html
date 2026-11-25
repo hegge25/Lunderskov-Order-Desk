@@ -13,8 +13,37 @@
     <header class="topbar">
       <a class="brand" href="#/orders"><span class="mark"></span>Lunderskov <b>Order Desk</b></a>
       <nav class="nav"><a href="#/orders">Orders</a><a href="#/web">Web configurator <span class="nav-tag">customer</span></a></nav>
-      <div class="who"><button class="tour-btn" data-tour>Tour</button><span class="proto">Prototype · dummy data</span><span class="user">Sales · M. Lund</span></div>
+      <div class="who"><button class="tour-btn" data-tour>Tour</button><button class="proto" data-note-toggle title="What comes from the project and what is assumed">Prototype · data note</button><span class="user">Sales · M. Lund</span></div>
     </header>
+    <aside class="data-note" data-note>
+      <div class="dn-line">
+        <b>About the data</b>
+        <span>All the information available in the case and our report is used. Where they are silent, the gaps are filled with assumptions, only to show how the configurator works.</span>
+        <button class="dn-more" data-note-toggle aria-expanded="false">What comes from where</button>
+      </div>
+      <div class="dn-detail" hidden>
+        <div>
+          <h4>From the case and the report</h4>
+          <ul>
+            <li>The PVM: every field, option and cardinality (case, Appendix 1)</li>
+            <li>The AS-IS process: the 17 steps, their owners and lead times (case pp. 6–7, Appendix 3)</li>
+            <li>The TO-BE process: quotation scenario 2, CTO steps C1–C6 and ETO steps E1–E8 (report)</li>
+            <li>The requirements R1–R7 and the lead-time targets (report §3.2)</li>
+            <li>Which PVM attributes each step uses, and the split into CTO and ETO orders (report)</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Assumed, to make it work</h4>
+          <ul>
+            <li>All prices: plates, filters, accessories and engineering hours</li>
+            <li>The locations and their regulations: wind zones, height limits, emission factors</li>
+            <li>The numbers inside the design rules: limits, factors, material densities</li>
+            <li>The TO-BE step durations, sized to meet R1 and R2, and 8 days for the customer's decision</li>
+            <li>The customers and orders on the board</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -5,7 +5,7 @@ A prototype of the TO-BE process in our report for Lunderskov Chimneys (DTU 4163
 - a **web configurator** for customers (quotation scenario 2), which gives a budget price and a standard drawing at once;
 - the **Order Desk**, where sales and design take an order from enquiry to installed chimney, through the CTO process (C1–C6) or the ETO process (E1–E8).
 
-**All regulations, prices, timings and orders are dummy data.** The fields, options, cardinalities and process steps follow the case and the report.
+**All the information available in the case and the report is used**: the PVM's fields, options and cardinalities, the AS-IS and TO-BE process steps, the case's lead times and the requirements. **Where they are silent, the gaps are filled with assumptions**, only to show how the configurator works: prices, the locations and their regulations, the numbers inside the design rules, the TO-BE durations and the orders on the board. The site says this in a note under the top bar.
 
 ## Run
 

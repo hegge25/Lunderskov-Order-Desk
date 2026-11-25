@@ -78,7 +78,7 @@ const MAIN = [
       <p>In the case, a quotation takes 4 days to 2 weeks and can land up to 40 % from the actual price, and an order takes 4 weeks on average to design. Jørgensen Consult recommends at most 1–2 days for a quotation, 2 days for a CTO design and 2 weeks for an ETO design.</p>
       <p>The tour follows one chimney order from the customer to the design, in five parts:</p>
       <ol class="t-outline"><li>The order board</li><li>The customer's web configurator</li><li>The salesperson's order page</li><li>Design in the order configurator</li><li>Lead time: TO-BE against AS-IS, and an order outside the PVM</li></ol>
-      <p class="t-note">About 5 minutes; the arrow keys move through it. Prices, rules and orders are dummy data. The fields, options and process steps follow the case and the report.</p>`,
+      <p class="t-note">About 5 minutes; the arrow keys move through it. All the information in the case and the report is used: the PVM, the AS-IS and TO-BE steps and the requirements. Where they are silent (prices, regulations per location, TO-BE durations, the orders), the gaps are filled with assumptions to show how the configurator works. The yellow note under the top bar lists what comes from where.</p>`,
   },
   {
     chapter: 0,

@@ -54,7 +54,21 @@ small { color: var(--ink-3); font-size: 11px; font-weight: 400; }
 .nav a { text-decoration: none; padding: 6px 10px; border-radius: 6px; color: #aab3bd; }
 .nav a.on, .nav a:hover { color: #fff; background: #222a32; }
 .who { margin-left: auto; display: flex; gap: 14px; align-items: center; font-size: 12px; }
-.proto { color: #ffb37a; border: 1px solid #5b3a20; padding: 2px 8px; border-radius: 20px; }
+.proto { color: #ffb37a; background: transparent; border: 1px solid #5b3a20; padding: 2px 8px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+.proto:hover { border-color: #ffb37a; }
+
+/* ── Data note (every page) ── */
+.data-note { flex: none; position: relative; z-index: 40; background: #fff8e6; border-bottom: 1px solid #f1dfb0; color: #5c4a1a; font-size: 12px; }
+.dn-line { display: flex; align-items: baseline; gap: 10px; padding: 5px 18px; }
+.dn-line b { font-weight: 600; color: #3d300c; white-space: nowrap; }
+.dn-line span { flex: 1; min-width: 0; }
+.dn-more { border: 0; background: none; padding: 0; color: #9a6700; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; }
+.dn-more:hover { color: #6b4700; }
+.dn-detail { position: absolute; left: 0; right: 0; top: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 12px 18px 16px; background: #fff8e6; border-bottom: 1px solid #f1dfb0; box-shadow: 0 10px 24px rgba(60, 45, 10, 0.14); }
+.dn-detail[hidden] { display: none; }
+.dn-detail h4 { margin: 0 0 6px; font-size: 12px; color: #3d300c; }
+.dn-detail ul { margin: 0; padding-left: 16px; }
+.dn-detail li { margin: 2px 0; }
 .user { color: #aab3bd; }
 
 #app { flex: 1; min-height: 0; }
