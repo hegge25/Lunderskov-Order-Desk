@@ -42,7 +42,7 @@ function inputHtml(key, f, v) {
 export function usesHtml(link) {
   const l = LINKS[link];
   if (!l) return '';
-  return h`<div class="uses" data-link="${link}" title="Process steps that use this attribute. Hover to see them on the strip.">
+  return h`<div class="uses" data-link="${link}" title="Process steps that use this attribute. Hover the title or these chips to see them on the strip.">
     <span class="u-asis"><em>AS-IS</em>${l.asis.filter((n) => typeof n === 'number').map((n) => `<i>${n}</i>`)}</span>
     <span class="u-tobe"><em>TO-BE</em><i class="q">Q</i>${l.CTO.map((n) => `<i class="cto">${n}</i>`)}${l.ETO.map((n) => `<i class="eto">${n}</i>`)}</span>
   </div>`;
@@ -169,9 +169,16 @@ export function mountConfig(el, order, handlers, opts = {}) {
   el.addEventListener('mouseover', (e) => {
     const g = e.target.closest('[data-group]');
     handlers.onHoverGroup?.(g ? g.dataset.group : null);
-    const f = e.target.closest('[data-field]');
-    const key = f ? f.dataset.field.split('.')[0] : null;
-    const link = (key && LINK_OF[key]) || g?.dataset.glink || null;
+    // Only a field's title, its step chips or a group header light up the strip, so moving a
+    // slider or typing a value does not.
+    const t = e.target.closest('.f-top label, .uses, .fgroup > header');
+    let link = null;
+    if (t?.matches('.uses')) link = t.dataset.link;
+    else if (t) {
+      const f = t.closest('[data-field]');
+      const key = f ? f.dataset.field.split('.')[0] : null;
+      link = (key && LINK_OF[key]) || g?.dataset.glink || null;
+    }
     if (link !== hoverLink) { hoverLink = link; handlers.onHoverLink?.(link); }
   });
   el.addEventListener('mouseleave', () => {

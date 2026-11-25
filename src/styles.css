@@ -493,7 +493,7 @@ select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-ra
 .cmp-row.asis .cmp-name { color: var(--ink-3); }
 .cmp-track { position: relative; height: 16px; }
 .cmp-row.asis .cmp-track { opacity: 0.8; }
-.cmp-track .g-seg { position: absolute; top: 0; height: 16px; min-width: 1px; box-shadow: inset -1px 0 0 rgba(255,255,255,0.75); transition: opacity 0.15s, background-color 0.15s; }
+.cmp-track .g-seg { position: absolute; top: 0; height: 16px; min-width: 1px; box-shadow: inset -1px 0 0 rgba(255,255,255,0.75); }
 .cmp-track .g-seg:first-child { border-radius: 3px 0 0 3px; }
 .g-seg.s-enquiry { background-color: #9ec5f0; }
 .g-seg.s-quote { background-color: #3d7fd1; }
@@ -541,3 +541,6 @@ select { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-ra
   .cmp { --name: 38px; --end: 92px; --gap: 6px; }
   .cmp-gap em { font-size: 10px; }
 }
+/* Field titles and step chips are what light up the strip */
+.cfg:not(.web-form) .f-top label, .cfg:not(.web-form) .fgroup > header span:first-child { cursor: help; text-decoration: underline dotted transparent; text-underline-offset: 3px; transition: text-decoration-color 0.15s; }
+.cfg:not(.web-form) .f-top label:hover, .cfg:not(.web-form) .fgroup > header span:first-child:hover { text-decoration-color: var(--accent); }

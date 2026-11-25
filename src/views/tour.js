@@ -15,7 +15,7 @@ const STRIP_MARKS = [
   { sel: '.cmp-gap em', at: 'left', text: () => `<b>${txt('.cmp-gap em')}</b>: the gain. Most of it comes from quotation (blue) and design (purple).` },
   { sel: '.cmp-row.tobe .cmp-req', at: 'left', text: () => '<b>R1</b> and <b>R2</b> check each plan against the case\'s targets: a quotation within 1–2 days, design within 2 days for CTO and 2 weeks for ETO. Hover a chip for the numbers.' },
   { sel: '.cmp-row.tobe .cmp-total b', text: () => 'Planned delivery and working days from the enquiry (weekends not counted).' },
-  { sel: '.cmp-today em', at: 'right', text: () => '<b>Today.</b> Hover a field on the left to light up, in both bars, the steps that use it.' },
+  { sel: '.cmp-today em', at: 'right', text: () => '<b>Today.</b> Hover a field\'s title on the left to light up, in both bars, the steps that use it.' },
 ];
 
 const STRIP_STEP = {
@@ -54,7 +54,7 @@ const MAIN = [
     place: 'right',
     title: 'The PVM, linked to the process',
     body: `<p>The fields are the <b>customer view of the PVM</b>; each slider's green band is the interval. The chips under each field are the <b>PVM–process link</b>: the AS-IS steps (Appendix 3) and TO-BE steps that use the attribute.</p>
-      <p><b>Try it:</b> hover <i>Flow rate</i> and watch the strip: one step in TO-BE, 8 steps spread over AS-IS.</p>`,
+      <p><b>Try it:</b> hover the title <i>Flow rate</i> and watch the strip: one step in TO-BE, 8 steps spread over AS-IS.</p>`,
   },
   {
     route: `#/order/${DEMO}`,
@@ -95,7 +95,7 @@ const MAIN = [
     body: `<ul>
       <li>Set <i>Location</i> to <b>Other</b>: the order becomes ETO and the right column switches to E2–E8.</li>
       <li>Put the <i>cleaning door</i> at <b>90°</b>: it collides with the gas inlet.</li>
-      <li>Hover a field and compare the TO-BE and AS-IS bars.</li>
+      <li>Hover a field's title and compare the TO-BE and AS-IS bars.</li>
       <li>Open the <b>drawing</b> in C5.</li>
       <li>Request a quotation in the <b>web configurator</b> and find it on the board.</li>
     </ul>
